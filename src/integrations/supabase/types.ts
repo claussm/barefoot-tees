@@ -14,7 +14,203 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      event_players: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          note: string | null
+          player_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          note?: string | null
+          player_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          note?: string | null
+          player_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_players_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          course_name: string
+          created_at: string
+          date: string
+          first_tee_time: string
+          holes: number
+          id: string
+          is_locked: boolean
+          max_players: number
+          notes: string | null
+          signup_deadline: string | null
+          slots_per_group: number
+          tee_interval_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          course_name: string
+          created_at?: string
+          date: string
+          first_tee_time: string
+          holes?: number
+          id?: string
+          is_locked?: boolean
+          max_players?: number
+          notes?: string | null
+          signup_deadline?: string | null
+          slots_per_group?: number
+          tee_interval_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          course_name?: string
+          created_at?: string
+          date?: string
+          first_tee_time?: string
+          holes?: number
+          id?: string
+          is_locked?: boolean
+          max_players?: number
+          notes?: string | null
+          signup_deadline?: string | null
+          slots_per_group?: number
+          tee_interval_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      group_assignments: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          player_id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          player_id: string
+          position: number
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          player_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_assignments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          event_id: string
+          group_index: number
+          id: string
+          tee_time: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          group_index: number
+          id?: string
+          tee_time: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          group_index?: number
+          id?: string
+          tee_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          created_at: string
+          email: string | null
+          handicap: number | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          handicap?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          handicap?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
