@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,12 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: player || {},
   });
+
+  useEffect(() => {
+    if (open) {
+      reset(player || {});
+    }
+  }, [open, player, reset]);
 
   const { data: teeBoxes } = useQuery({
     queryKey: ["tee_boxes"],
@@ -77,6 +84,9 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{player ? "Edit Player" : "Add Player"}</DialogTitle>
+          <DialogDescription>
+            {player ? "Update player information below." : "Fill in the details to add a new player."}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
