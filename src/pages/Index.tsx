@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, Calendar, TrendingUp } from "lucide-react";
+import { Plus, Users, Calendar, TrendingUp, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { EventDialog } from "@/components/EventDialog";
 import { format } from "date-fns";
 import heroImage from "@/assets/golf-hero.jpg";
 
 const Index = () => {
+  const { signOut, user } = useAuth();
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
 
   const { data: players } = useQuery({
@@ -52,13 +54,19 @@ const Index = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="container mx-auto">
-            <h1 className="text-4xl font-bold text-primary-foreground mb-2">
-              Golf League Manager
-            </h1>
-            <p className="text-lg text-primary-foreground/90">
-              Organize players, events, and tee times with ease
-            </p>
+          <div className="container mx-auto flex items-end justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-primary-foreground mb-2">
+                Golf League Manager
+              </h1>
+              <p className="text-lg text-primary-foreground/90">
+                Organize players, events, and tee times with ease
+              </p>
+            </div>
+            <Button variant="outline" onClick={signOut} className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </div>
       </div>
