@@ -49,6 +49,17 @@ const Players = () => {
     },
   });
 
+  const reactivateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("players").update({ is_active: true }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["players"] });
+      toast.success("Player reactivated successfully");
+    },
+  });
+
   const filteredPlayers = players?.filter((player) =>
     player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     player.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,6 +104,7 @@ const Players = () => {
             setDialogOpen(true);
           }}
           onDeactivate={(id) => deleteMutation.mutate(id)}
+          onReactivate={(id) => reactivateMutation.mutate(id)}
         />
 
       <PlayerDialog

@@ -1,15 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, RefreshCw } from "lucide-react";
 
 interface PlayersTableProps {
   players: any[];
   isLoading: boolean;
   onEdit: (player: any) => void;
   onDeactivate: (id: string) => void;
+  onReactivate: (id: string) => void;
 }
 
-export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate }: PlayersTableProps) => {
+export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReactivate }: PlayersTableProps) => {
   if (isLoading) {
     return <div className="text-center py-8 text-muted">Loading players...</div>;
   }
@@ -81,13 +82,21 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate }: Playe
                   <Button variant="ghost" size="sm" onClick={() => onEdit(player)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  {player.is_active && (
+                  {player.is_active ? (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => onDeactivate(player.id)}
                     >
                       <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onReactivate(player.id)}
+                    >
+                      <RefreshCw className="h-4 w-4" />
                     </Button>
                   )}
                 </div>

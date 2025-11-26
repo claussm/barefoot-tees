@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 interface PlayerDialogProps {
@@ -170,6 +171,17 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" {...register("notes")} />
           </div>
+
+          {player && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="is_active" className="cursor-pointer">Active Status</Label>
+              <Switch
+                id="is_active"
+                checked={watch("is_active") ?? true}
+                onCheckedChange={(checked) => setValue("is_active", checked)}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
