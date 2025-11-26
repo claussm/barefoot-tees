@@ -21,6 +21,7 @@ export type Database = {
           id: string
           note: string | null
           player_id: string
+          rsvp_status: string | null
           status: string
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           id?: string
           note?: string | null
           player_id: string
+          rsvp_status?: string | null
           status?: string
         }
         Update: {
@@ -37,6 +39,7 @@ export type Database = {
           id?: string
           note?: string | null
           player_id?: string
+          rsvp_status?: string | null
           status?: string
         }
         Relationships: [
