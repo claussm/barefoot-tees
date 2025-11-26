@@ -107,14 +107,14 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
           <div>
             <Label htmlFor="tee_box_id">Tee Box</Label>
             <Select
-              value={watch("tee_box_id") || ""}
-              onValueChange={(value) => setValue("tee_box_id", value || null)}
+              value={watch("tee_box_id") || "none"}
+              onValueChange={(value) => setValue("tee_box_id", value === "none" ? null : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select tee box" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {teeBoxes?.map((teeBox) => (
                   <SelectItem key={teeBox.id} value={teeBox.id}>
                     <div className="flex items-center gap-2">
@@ -133,14 +133,14 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
           <div>
             <Label htmlFor="default_team_id">Default Team</Label>
             <Select
-              value={watch("default_team_id") || ""}
-              onValueChange={(value) => setValue("default_team_id", value || null)}
+              value={watch("default_team_id") || "none"}
+              onValueChange={(value) => setValue("default_team_id", value === "none" ? null : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select team" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {teams?.map((team) => (
                   <SelectItem key={team.id} value={team.id}>
                     <div className="flex items-center gap-2">
