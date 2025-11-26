@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Users, History, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface EventPlayersListProps {
   eventId: string;
@@ -68,6 +69,20 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
   });
 
+  const updateRsvpMutation = useMutation({
+    mutationFn: async ({ id, rsvp_status }: { id: string; rsvp_status: string | null }) => {
+      const { error } = await supabase
+        .from("event_players")
+        .update({ rsvp_status })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      toast.success("RSVP updated");
+    },
+  });
+
   const addPlayerMutation = useMutation({
     mutationFn: async (playerId: string) => {
       const { error } = await supabase.from("event_players").insert({
@@ -82,6 +97,112 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
       queryClient.invalidateQueries({ queryKey: ["available_players", eventId] });
       toast.success("Player added");
       setAddDialogOpen(false);
+    },
+  });
+
+  const bulkAddActiveMutation = useMutation({
+    mutationFn: async () => {
+      const { data: activePlayers, error: playersError } = await supabase
+        .from("players")
+        .select("id")
+        .eq("is_active", true);
+      if (playersError) throw playersError;
+
+      const alreadyAdded = eventPlayers?.map((ep) => ep.player_id) || [];
+      const toAdd = activePlayers.filter((p) => !alreadyAdded.includes(p.id));
+
+      if (toAdd.length === 0) {
+        throw new Error("All active players are already in this event");
+      }
+
+      const { error: insertError } = await supabase.from("event_players").insert(
+        toAdd.map((p) => ({
+          event_id: eventId,
+          player_id: p.id,
+          status: "playing",
+        }))
+      );
+      if (insertError) throw insertError;
+      return toAdd.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      toast.success(`Added ${count} active players`);
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
+  const bulkAddFromLastEventMutation = useMutation({
+    mutationFn: async () => {
+      const { data: events, error: eventsError } = await supabase
+        .from("events")
+        .select("id")
+        .neq("id", eventId)
+        .order("date", { ascending: false })
+        .limit(1);
+      if (eventsError) throw eventsError;
+      if (!events || events.length === 0) {
+        throw new Error("No previous events found");
+      }
+
+      const lastEventId = events[0].id;
+      const { data: lastEventPlayers, error: lastPlayersError } = await supabase
+        .from("event_players")
+        .select("player_id")
+        .eq("event_id", lastEventId)
+        .eq("status", "playing");
+      if (lastPlayersError) throw lastPlayersError;
+
+      const alreadyAdded = eventPlayers?.map((ep) => ep.player_id) || [];
+      const toAdd = lastEventPlayers.filter((p) => !alreadyAdded.includes(p.player_id));
+
+      if (toAdd.length === 0) {
+        throw new Error("All players from last event are already in this event");
+      }
+
+      const { error: insertError } = await supabase.from("event_players").insert(
+        toAdd.map((p) => ({
+          event_id: eventId,
+          player_id: p.player_id,
+          status: "playing",
+        }))
+      );
+      if (insertError) throw insertError;
+      return toAdd.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      toast.success(`Added ${count} players from last event`);
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
+  const bulkAddRsvpYesMutation = useMutation({
+    mutationFn: async () => {
+      const yesPlayers = eventPlayers?.filter((ep) => ep.rsvp_status === "yes") || [];
+      
+      if (yesPlayers.length === 0) {
+        throw new Error("No players have RSVP'd yes");
+      }
+
+      const { error } = await supabase
+        .from("event_players")
+        .update({ status: "playing" })
+        .eq("event_id", eventId)
+        .eq("rsvp_status", "yes");
+      if (error) throw error;
+      return yesPlayers.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      toast.success(`Added ${count} players who RSVP'd yes`);
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
     },
   });
 
@@ -113,34 +234,59 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
           </p>
         </div>
 
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Player
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Player to Event</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {availablePlayers?.map((player) => (
-                <Button
-                  key={player.id}
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => addPlayerMutation.mutate(player.id)}
-                >
-                  {player.name}
-                </Button>
-              ))}
-              {availablePlayers?.length === 0 && (
-                <p className="text-center text-muted py-4">No available players</p>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Users className="mr-2 h-4 w-4" />
+                Bulk Add
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => bulkAddActiveMutation.mutate()}>
+                <Users className="mr-2 h-4 w-4" />
+                Add All Active Players
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => bulkAddFromLastEventMutation.mutate()}>
+                <History className="mr-2 h-4 w-4" />
+                Add Players from Last Event
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => bulkAddRsvpYesMutation.mutate()}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Add All RSVP Yes
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Player
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Player to Event</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {availablePlayers?.map((player) => (
+                  <Button
+                    key={player.id}
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => addPlayerMutation.mutate(player.id)}
+                  >
+                    {player.name}
+                  </Button>
+                ))}
+                {availablePlayers?.length === 0 && (
+                  <p className="text-center text-muted py-4">No available players</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="border border-border rounded-lg overflow-hidden bg-card">
@@ -150,6 +296,7 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
               <TableHead>Name</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Handicap</TableHead>
+              <TableHead>RSVP</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -159,6 +306,27 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
                 <TableCell className="font-medium">{ep.players.name}</TableCell>
                 <TableCell>{ep.players.phone || "-"}</TableCell>
                 <TableCell>{ep.players.handicap || "-"}</TableCell>
+                <TableCell>
+                  <Select
+                    value={ep.rsvp_status || "none"}
+                    onValueChange={(value) =>
+                      updateRsvpMutation.mutate({ 
+                        id: ep.id, 
+                        rsvp_status: value === "none" ? null : value 
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-</SelectItem>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="maybe">Maybe</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
                 <TableCell>
                   <Select
                     value={ep.status}
