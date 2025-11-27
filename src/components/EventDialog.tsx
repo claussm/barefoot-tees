@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,19 @@ export const EventDialog = ({ open, onOpenChange, event }: EventDialogProps) => 
   });
 
   const holes = watch("holes");
+  const courseId = watch("course_id");
+
+  const { data: courses } = useQuery({
+    queryKey: ["courses"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     if (event) {
@@ -37,14 +50,21 @@ export const EventDialog = ({ open, onOpenChange, event }: EventDialogProps) => 
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Get course name for backward compatibility
+      const selectedCourse = courses?.find(c => c.id === data.course_id);
+      const eventData = {
+        ...data,
+        course_name: selectedCourse?.name || data.course_name,
+      };
+
       if (event) {
-        const { error } = await supabase.from("events").update(data).eq("id", event.id);
+        const { error } = await supabase.from("events").update(eventData).eq("id", event.id);
         if (error) throw error;
       } else {
         // Create event
         const { data: newEvent, error: eventError } = await supabase
           .from("events")
-          .insert(data)
+          .insert(eventData)
           .select()
           .single();
 
@@ -92,8 +112,27 @@ export const EventDialog = ({ open, onOpenChange, event }: EventDialogProps) => 
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <Label htmlFor="course_name">Course Name *</Label>
-            <Input id="course_name" {...register("course_name", { required: true })} />
+            <Label htmlFor="course_id">Course *</Label>
+            <Select
+              value={courseId}
+              onValueChange={(value) => setValue("course_id", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a course..." />
+              </SelectTrigger>
+              <SelectContent>
+                {courses?.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(!courses || courses.length === 0) && (
+              <p className="text-sm text-muted-foreground mt-1">
+                No courses available. Add courses in the Courses page first.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
