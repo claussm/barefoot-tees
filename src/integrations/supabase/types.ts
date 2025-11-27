@@ -14,6 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
+      course_holes: {
+        Row: {
+          course_id: string
+          created_at: string
+          handicap_index: number | null
+          hole_number: number
+          id: string
+          is_ctp_hole: boolean
+          par: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          handicap_index?: number | null
+          hole_number: number
+          id?: string
+          is_ctp_hole?: boolean
+          par: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          handicap_index?: number | null
+          hole_number?: number
+          id?: string
+          is_ctp_hole?: boolean
+          par?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_holes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_tees: {
+        Row: {
+          color: string | null
+          course_id: string
+          course_rating: number | null
+          created_at: string
+          id: string
+          name: string
+          slope_rating: number | null
+          sort_order: number
+          total_yardage: number | null
+        }
+        Insert: {
+          color?: string | null
+          course_id: string
+          course_rating?: number | null
+          created_at?: string
+          id?: string
+          name: string
+          slope_rating?: number | null
+          sort_order?: number
+          total_yardage?: number | null
+        }
+        Update: {
+          color?: string | null
+          course_id?: string
+          course_rating?: number | null
+          created_at?: string
+          id?: string
+          name?: string
+          slope_rating?: number | null
+          sort_order?: number
+          total_yardage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tees_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
       event_players: {
         Row: {
           created_at: string
@@ -61,6 +167,7 @@ export type Database = {
       }
       events: {
         Row: {
+          course_id: string | null
           course_name: string
           created_at: string
           date: string
@@ -78,6 +185,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          course_id?: string | null
           course_name: string
           created_at?: string
           date: string
@@ -95,6 +203,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          course_id?: string | null
           course_name?: string
           created_at?: string
           date?: string
@@ -111,7 +220,15 @@ export type Database = {
           track_points?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_assignments: {
         Row: {
