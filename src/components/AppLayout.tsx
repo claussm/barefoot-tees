@@ -43,7 +43,7 @@ function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="hover:bg-accent"
+                      className="hover:bg-accent hover:text-accent-foreground transition-colors"
                       activeClassName="bg-accent text-accent-foreground font-semibold"
                     >
                       <item.icon className="h-4 w-4" />
