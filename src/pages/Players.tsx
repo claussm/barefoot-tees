@@ -105,7 +105,7 @@ const Players = () => {
               variant={showActiveOnly ? "default" : "outline"}
               onClick={() => setShowActiveOnly(!showActiveOnly)}
             >
-              {showActiveOnly ? "Active Only" : "Show All"}
+              {showActiveOnly ? "Active Only" : "All"}
             </Button>
             <Button onClick={() => {
               setEditingPlayer(null);
