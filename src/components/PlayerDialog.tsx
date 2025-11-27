@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +19,7 @@ interface PlayerDialogProps {
 
 export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) => {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, setValue, watch } = useForm({
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm({
     defaultValues: player || {},
   });
 
@@ -175,10 +175,17 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
           {player && (
             <div className="flex items-center justify-between">
               <Label htmlFor="is_active" className="cursor-pointer">Active Status</Label>
-              <Switch
-                id="is_active"
-                checked={watch("is_active") ?? true}
-                onCheckedChange={(checked) => setValue("is_active", checked)}
+              <Controller
+                name="is_active"
+                control={control}
+                defaultValue={true}
+                render={({ field }) => (
+                  <Switch
+                    id="is_active"
+                    checked={field.value ?? true}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
               />
             </div>
           )}
