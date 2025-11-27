@@ -89,6 +89,34 @@ export function TeesDialog({ open, onOpenChange, course }: TeesDialogProps) {
     },
   });
 
+  const quickFillMutation = useMutation({
+    mutationFn: async () => {
+      const standardTees = [
+        { name: "Platinum", color: "#E5E7EB", sort_order: 0 },
+        { name: "Black", color: "#000000", sort_order: 1 },
+        { name: "White", color: "#FFFFFF", sort_order: 2 },
+        { name: "Green", color: "#22C55E", sort_order: 3 },
+        { name: "Gold", color: "#EAB308", sort_order: 4 },
+      ];
+
+      const teesToInsert = standardTees.map(tee => ({
+        ...tee,
+        course_id: course.id,
+      }));
+
+      const { error } = await supabase.from("course_tees").insert(teesToInsert);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["course_tees", course.id] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      toast.success("Standard tees added");
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
   const resetForm = () => {
     setEditingTee(null);
     setFormData({
@@ -205,7 +233,21 @@ export function TeesDialog({ open, onOpenChange, course }: TeesDialogProps) {
         </form>
 
         <div>
-          <h3 className="font-semibold mb-4">Existing Tees</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Existing Tees</h3>
+            {(!tees || tees.length === 0) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => quickFillMutation.mutate()}
+                disabled={quickFillMutation.isPending}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Quick Fill Template
+              </Button>
+            )}
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
