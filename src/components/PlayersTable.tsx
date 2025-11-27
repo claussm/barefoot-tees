@@ -73,7 +73,7 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
                 )}
               </TableCell>
               <TableCell>
-                <span className={player.is_active ? "text-foreground" : "text-muted-foreground"}>
+                <span className={player.is_active ? "text-green-600 dark:text-green-400" : "text-destructive"}>
                   {player.is_active ? "Active" : "Inactive"}
                 </span>
               </TableCell>
