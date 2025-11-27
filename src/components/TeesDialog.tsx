@@ -20,7 +20,6 @@ export function TeesDialog({ open, onOpenChange, course }: TeesDialogProps) {
   const [editingTee, setEditingTee] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
-    color: "",
     total_yardage: "",
     slope_rating: "",
     course_rating: "",
@@ -121,7 +120,6 @@ export function TeesDialog({ open, onOpenChange, course }: TeesDialogProps) {
     setEditingTee(null);
     setFormData({
       name: "",
-      color: "",
       total_yardage: "",
       slope_rating: "",
       course_rating: "",
@@ -133,7 +131,6 @@ export function TeesDialog({ open, onOpenChange, course }: TeesDialogProps) {
     setEditingTee(tee);
     setFormData({
       name: tee.name || "",
-      color: tee.color || "",
       total_yardage: tee.total_yardage?.toString() || "",
       slope_rating: tee.slope_rating?.toString() || "",
       course_rating: tee.course_rating?.toString() || "",
@@ -166,15 +163,6 @@ export function TeesDialog({ open, onOpenChange, course }: TeesDialogProps) {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Black, Gold"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
-              <Input
-                id="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                placeholder="#000000"
               />
             </div>
             <div className="space-y-2">
