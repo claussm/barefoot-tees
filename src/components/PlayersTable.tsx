@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, RefreshCw } from "lucide-react";
+import { Edit, Trash2, RefreshCw, Trophy } from "lucide-react";
+import { PlayerPointsDialog } from "./PlayerPointsDialog";
 
 interface PlayersTableProps {
   players: any[];
@@ -11,6 +13,14 @@ interface PlayersTableProps {
 }
 
 export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReactivate }: PlayersTableProps) => {
+  const [pointsDialogOpen, setPointsDialogOpen] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+
+  const handleViewPoints = (player: any) => {
+    setSelectedPlayer(player);
+    setPointsDialogOpen(true);
+  };
+
   if (isLoading) {
     return <div className="text-center py-8 text-muted">Loading players...</div>;
   }
@@ -75,6 +85,14 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleViewPoints(player)}
+                    title="View Points"
+                  >
+                    <Trophy className="h-4 w-4" />
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => onEdit(player)}>
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -101,6 +119,12 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
           ))}
         </TableBody>
       </Table>
+
+      <PlayerPointsDialog
+        open={pointsDialogOpen}
+        onOpenChange={setPointsDialogOpen}
+        player={selectedPlayer}
+      />
     </div>
   );
 };
