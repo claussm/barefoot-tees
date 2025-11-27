@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
+
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,23 +84,6 @@ export function HolesDialog({ open, onOpenChange, course }: HolesDialogProps) {
     setHoles(newHoles);
   };
 
-  const handleQuickFill = () => {
-    const frontNine = Array.from({ length: 9 }, (_, i) => ({
-      hole_number: i + 1,
-      par: [4, 4, 3, 5, 4, 4, 3, 4, 5][i], // Typical front 9
-      handicap_index: i + 1,
-      is_ctp_hole: [3, 5, 17].includes(i + 1),
-    }));
-    const backNine = Array.from({ length: 9 }, (_, i) => ({
-      hole_number: i + 10,
-      par: [4, 4, 3, 5, 4, 4, 3, 4, 5][i], // Typical back 9
-      handicap_index: i + 10,
-      is_ctp_hole: [3, 8, 13, 17].includes(i + 10),
-    }));
-    setHoles([...frontNine, ...backNine]);
-    toast.success("Template applied");
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
@@ -109,15 +92,9 @@ export function HolesDialog({ open, onOpenChange, course }: HolesDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">
-              Configure each hole's par, handicap index, and mark par 3s for "Closest to Pin" bets
-            </p>
-            <Button variant="outline" size="sm" onClick={handleQuickFill}>
-              <Plus className="h-4 w-4 mr-2" />
-              Quick Fill Template
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Configure each hole's par, handicap index, and mark par 3s for "Closest to Pin" bets
+          </p>
 
           <Table>
             <TableHeader>
