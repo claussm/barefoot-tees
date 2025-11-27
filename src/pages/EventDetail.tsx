@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Lock, Unlock, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, Lock, Unlock, FileText, Trash2, Pencil } from "lucide-react";
 import { EventPlayersList } from "@/components/EventPlayersList";
 import { TeeSheet } from "@/components/TeeSheet";
 import { EventScoring } from "@/components/EventScoring";
+import { EventDialog } from "@/components/EventDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -29,6 +30,7 @@ const EventDetail = () => {
   const { role } = useAuth();
   const [activeTab, setActiveTab] = useState(role === "scorer" ? "scoring" : "players");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { data: event } = useQuery({
     queryKey: ["event", id],
@@ -37,7 +39,7 @@ const EventDetail = () => {
         .from("events")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -209,6 +211,10 @@ const EventDetail = () => {
 
             {role === "admin" && (
               <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
                 <Button variant="outline" onClick={handlePrint}>
                   <FileText className="mr-2 h-4 w-4" />
                   Print
@@ -290,6 +296,17 @@ const EventDetail = () => {
           />
         </div>
       </main>
+
+      <EventDialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            queryClient.invalidateQueries({ queryKey: ["event", id] });
+          }
+        }}
+        event={event}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
