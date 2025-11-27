@@ -61,6 +61,7 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log('Saving to database:', data);
       if (player) {
         const { error } = await supabase
           .from("players")
@@ -81,6 +82,9 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
   });
 
   const onSubmit = (data: any) => {
+    console.log('Form submitted with data:', data);
+    console.log('Original player:', player);
+    
     // Check if deactivating an active player
     if (player && player.is_active && data.is_active === false) {
       setPendingFormData(data);
