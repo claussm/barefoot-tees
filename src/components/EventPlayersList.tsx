@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Users, History, CheckCircle } from "lucide-react";
+import { Plus, Users, History, CheckCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface EventPlayersListProps {
   eventId: string;
@@ -18,6 +19,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [playerToDelete, setPlayerToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data: eventPlayers } = useQuery({
     queryKey: ["event_players", eventId],
@@ -206,6 +209,37 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
   });
 
+  const deletePlayerMutation = useMutation({
+    mutationFn: async (eventPlayerId: string) => {
+      const { error } = await supabase
+        .from("event_players")
+        .delete()
+        .eq("id", eventPlayerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["groups", eventId] });
+      toast.success("Player removed from event");
+      setDeleteDialogOpen(false);
+      setPlayerToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error("Failed to remove player: " + error.message);
+    },
+  });
+
+  const handleDeleteClick = (eventPlayerId: string, playerName: string) => {
+    setPlayerToDelete({ id: eventPlayerId, name: playerName });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (playerToDelete) {
+      deletePlayerMutation.mutate(playerToDelete.id);
+    }
+  };
+
   const filteredPlayers = eventPlayers?.filter((ep) => 
     statusFilter === "all" || ep.status === statusFilter
   );
@@ -297,6 +331,7 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
               <TableHead>Handicap</TableHead>
               <TableHead>RSVP</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -343,11 +378,40 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
                     </SelectContent>
                   </Select>
                 </TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteClick(ep.id, ep.players.name)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Player from Event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {playerToDelete?.name} from this event? This will also remove them from any assigned groups.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove Player
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
