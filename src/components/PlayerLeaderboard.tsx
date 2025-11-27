@@ -59,6 +59,21 @@ export function PlayerLeaderboard({ playerStats, teams, isLoading }: PlayerLeade
     }
   };
 
+  const playerRankings = useMemo(() => {
+    // Sort all players by average (descending) to determine official rank
+    const sortedByAvg = [...playerStats].sort((a, b) => 
+      Number(b.average) - Number(a.average)
+    );
+    
+    // Create a map of player id -> rank
+    const rankMap = new Map<string, number>();
+    sortedByAvg.forEach((player, index) => {
+      rankMap.set(player.id, index + 1);
+    });
+    
+    return rankMap;
+  }, [playerStats]);
+
   const filteredAndSortedStats = useMemo(() => {
     let filtered = playerStats;
 
@@ -185,7 +200,7 @@ export function PlayerLeaderboard({ playerStats, teams, isLoading }: PlayerLeade
             ) : (
               filteredAndSortedStats.map((player, index) => (
                 <TableRow key={player.id} className="hover:bg-muted/50 cursor-pointer">
-                  <TableCell className="font-medium">#{index + 1}</TableCell>
+                  <TableCell className="font-medium">#{playerRankings.get(player.id)}</TableCell>
                   <TableCell className="font-medium">{player.name}</TableCell>
                   {teams && teams.length > 0 && (
                     <TableCell>
