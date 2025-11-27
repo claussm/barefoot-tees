@@ -5,12 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Lock, Unlock, FileText } from "lucide-react";
+import { ArrowLeft, Lock, Unlock, FileText, Trash2 } from "lucide-react";
 import { EventPlayersList } from "@/components/EventPlayersList";
 import { TeeSheet } from "@/components/TeeSheet";
 import { EventScoring } from "@/components/EventScoring";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -18,6 +28,7 @@ const EventDetail = () => {
   const queryClient = useQueryClient();
   const { role } = useAuth();
   const [activeTab, setActiveTab] = useState(role === "scorer" ? "scoring" : "players");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: event } = useQuery({
     queryKey: ["event", id],
@@ -115,6 +126,64 @@ const EventDetail = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      // Delete in order: group_assignments -> groups -> event_players -> round_scores -> event
+      // First delete group assignments
+      if (groups && groups.length > 0) {
+        const { error: assignmentsError } = await supabase
+          .from("group_assignments")
+          .delete()
+          .in("group_id", groups.map(g => g.id));
+        if (assignmentsError) throw assignmentsError;
+      }
+
+      // Delete groups
+      const { error: groupsError } = await supabase
+        .from("groups")
+        .delete()
+        .eq("event_id", id);
+      if (groupsError) throw groupsError;
+
+      // Delete event players
+      const { error: playersError } = await supabase
+        .from("event_players")
+        .delete()
+        .eq("event_id", id);
+      if (playersError) throw playersError;
+
+      // Delete round scores
+      const { error: scoresError } = await supabase
+        .from("round_scores")
+        .delete()
+        .eq("event_id", id);
+      if (scoresError) throw scoresError;
+
+      // Finally delete the event
+      const { error: eventError } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", id);
+      if (eventError) throw eventError;
+    },
+    onSuccess: () => {
+      toast.success("Event deleted successfully");
+      navigate("/");
+    },
+    onError: (error) => {
+      toast.error("Failed to delete event: " + error.message);
+    },
+  });
+
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    deleteMutation.mutate();
+    setShowDeleteDialog(false);
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -159,6 +228,14 @@ const EventDetail = () => {
                       Lock
                     </>
                   )}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
                 </Button>
               </div>
             )}
@@ -213,6 +290,27 @@ const EventDetail = () => {
           />
         </div>
       </main>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{event.course_name}" on {format(new Date(event.date), "MMMM d, yyyy")}? 
+              This will permanently delete the event along with all player assignments, groups, and scores. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Event
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
