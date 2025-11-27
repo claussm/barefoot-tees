@@ -59,7 +59,7 @@ const App = () => (
             <Route
               path="/statistics"
               element={
-                <ProtectedRoute requiredRole="admin">
+                <ProtectedRoute>
                   <AppLayout>
                     <Statistics />
                   </AppLayout>

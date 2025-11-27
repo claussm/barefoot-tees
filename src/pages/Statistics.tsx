@@ -1,31 +1,35 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp } from "lucide-react";
-import { NavLink } from "@/components/NavLink";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlayerLeaderboard } from "@/components/PlayerLeaderboard";
+import { TeamStandings } from "@/components/TeamStandings";
+import { RecentEventsScoring } from "@/components/RecentEventsScoring";
 
 export default function Statistics() {
+  const { role } = useAuth();
+
   const { data: playerStats, isLoading: loadingPlayers } = useQuery({
     queryKey: ["player-statistics"],
     queryFn: async () => {
       const { data: players, error: playersError } = await supabase
         .from("players")
-        .select("id, name")
+        .select(`
+          id,
+          name,
+          default_team_id,
+          player_teams:default_team_id (
+            name,
+            color
+          )
+        `)
         .eq("is_active", true);
       if (playersError) throw playersError;
 
       const statsPromises = players.map(async (player) => {
         const { data: scores, error: scoresError } = await supabase
           .from("round_scores")
-          .select("points")
+          .select("points, created_at")
           .eq("player_id", player.id)
           .order("created_at", { ascending: false })
           .limit(6);
@@ -34,16 +38,35 @@ export default function Statistics() {
         const totalPoints = scores.reduce((sum, s) => sum + Number(s.points), 0);
         const average = scores.length > 0 ? totalPoints / scores.length : 0;
         const roundsPlayed = scores.length;
+        const lastScore = scores.length > 0 ? Number(scores[0].points) : undefined;
 
         return {
-          ...player,
+          id: player.id,
+          name: player.name,
           average: average.toFixed(2),
           roundsPlayed,
+          lastScore,
+          teamId: player.default_team_id,
+          teamName: player.player_teams?.name,
+          teamColor: player.player_teams?.color,
         };
       });
 
       const stats = await Promise.all(statsPromises);
       return stats.sort((a, b) => Number(b.average) - Number(a.average));
+    },
+  });
+
+  const { data: teams } = useQuery({
+    queryKey: ["teams-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_teams")
+        .select("id, name, color")
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -57,46 +80,66 @@ export default function Statistics() {
           name,
           color,
           player_team_members (
-            player_id
+            player_id,
+            players (
+              name
+            )
           )
         `)
         .eq("is_active", true);
       if (teamsError) throw teamsError;
 
       const teamStatsPromises = teams.map(async (team) => {
-        const memberIds = team.player_team_members.map((m: any) => m.player_id);
+        const members = team.player_team_members;
         
-        if (memberIds.length === 0) {
+        if (members.length === 0) {
           return {
-            ...team,
+            id: team.id,
+            name: team.name,
+            color: team.color,
             average: "0.00",
             memberCount: 0,
+            members: [],
           };
         }
 
-        const memberAverages = await Promise.all(
-          memberIds.map(async (playerId: string) => {
-            const { data: scores } = await supabase
-              .from("round_scores")
-              .select("points")
-              .eq("player_id", playerId)
-              .order("created_at", { ascending: false })
-              .limit(6);
+        const memberStatsPromises = members.map(async (member: any) => {
+          const { data: scores } = await supabase
+            .from("round_scores")
+            .select("points")
+            .eq("player_id", member.player_id)
+            .order("created_at", { ascending: false })
+            .limit(6);
 
-            if (!scores || scores.length === 0) return 0;
-            const total = scores.reduce((sum, s) => sum + Number(s.points), 0);
-            return total / scores.length;
-          })
-        );
+          if (!scores || scores.length === 0) {
+            return {
+              name: member.players.name,
+              average: "0.00",
+              avgNum: 0,
+            };
+          }
 
-        const teamAverage = memberAverages.length > 0
-          ? memberAverages.reduce((sum, avg) => sum + avg, 0) / memberAverages.length
+          const total = scores.reduce((sum, s) => sum + Number(s.points), 0);
+          const avg = total / scores.length;
+          return {
+            name: member.players.name,
+            average: avg.toFixed(2),
+            avgNum: avg,
+          };
+        });
+
+        const memberStats = await Promise.all(memberStatsPromises);
+        const teamAverage = memberStats.length > 0
+          ? memberStats.reduce((sum, m) => sum + m.avgNum, 0) / memberStats.length
           : 0;
 
         return {
-          ...team,
+          id: team.id,
+          name: team.name,
+          color: team.color,
           average: teamAverage.toFixed(2),
-          memberCount: memberIds.length,
+          memberCount: members.length,
+          members: memberStats,
         };
       });
 
@@ -105,85 +148,98 @@ export default function Statistics() {
     },
   });
 
+  const { data: recentEvents, isLoading: loadingEvents } = useQuery({
+    queryKey: ["recent-events-scoring"],
+    queryFn: async () => {
+      const { data: events, error: eventsError } = await supabase
+        .from("events")
+        .select(`
+          id,
+          course_name,
+          date,
+          event_players!inner (
+            player_id,
+            status
+          )
+        `)
+        .eq("event_players.status", "playing")
+        .order("date", { ascending: false })
+        .limit(5);
+      if (eventsError) throw eventsError;
+
+      const eventsWithScores = await Promise.all(
+        events.map(async (event) => {
+          const playerIds = event.event_players.map((ep: any) => ep.player_id);
+          
+          const { data: scores } = await supabase
+            .from("round_scores")
+            .select("player_id")
+            .eq("event_id", event.id)
+            .in("player_id", playerIds);
+
+          return {
+            eventId: event.id,
+            courseName: event.course_name,
+            date: event.date,
+            playerCount: playerIds.length,
+            scoredCount: scores?.length || 0,
+          };
+        })
+      );
+
+      return eventsWithScores;
+    },
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
-        <div className="grid gap-8 md:grid-cols-2">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-foreground">Statistics & Scoring</h1>
+        <p className="text-muted-foreground mt-1">
+          View player and team performance, {role === "scorer" && "and manage event scoring"}
+        </p>
+      </div>
+
+      <Tabs defaultValue={role === "scorer" ? "events" : "players"} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="players">Players</TabsTrigger>
+          <TabsTrigger value="teams">Teams</TabsTrigger>
+          {role === "scorer" && <TabsTrigger value="events">Recent Events</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="players" className="space-y-4">
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-foreground">Player Leaderboard</h2>
-            <div className="border border-border rounded-lg overflow-hidden">
-              {loadingPlayers ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">Rank</TableHead>
-                      <TableHead>Player</TableHead>
-                      <TableHead>Rounds</TableHead>
-                      <TableHead className="text-right">Avg Points (6)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {playerStats?.map((player, index) => (
-                      <TableRow key={player.id}>
-                        <TableCell className="font-medium">#{index + 1}</TableCell>
-                        <TableCell>{player.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{player.roundsPlayed}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {player.average}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
+            <PlayerLeaderboard
+              playerStats={playerStats || []}
+              teams={teams}
+              isLoading={loadingPlayers}
+            />
           </div>
+        </TabsContent>
 
+        <TabsContent value="teams" className="space-y-4">
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-foreground">Team Standings</h2>
-            <div className="border border-border rounded-lg overflow-hidden">
-              {loadingTeams ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">Rank</TableHead>
-                      <TableHead>Team</TableHead>
-                      <TableHead>Members</TableHead>
-                      <TableHead className="text-right">Team Avg</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {teamStats?.map((team, index) => (
-                      <TableRow key={team.id}>
-                        <TableCell className="font-medium">#{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-4 h-4 rounded"
-                              style={{ backgroundColor: team.color || "#3B82F6" }}
-                            />
-                            <span>{team.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{team.memberCount}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {team.average}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+            <TeamStandings
+              teamStats={teamStats || []}
+              isLoading={loadingTeams}
+            />
           </div>
-        </div>
-      </div>
+        </TabsContent>
+
+        {role === "scorer" && (
+          <TabsContent value="events" className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold mb-4 text-foreground">Recent Events</h2>
+              <RecentEventsScoring
+                events={recentEvents || []}
+                isLoading={loadingEvents}
+              />
+            </div>
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }
