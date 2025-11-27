@@ -127,16 +127,6 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
             </div>
 
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} />
-            </div>
-
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" type="tel" {...register("phone")} />
-            </div>
-
-            <div>
               <Label htmlFor="handicap">Handicap</Label>
               <Input
                 id="handicap"

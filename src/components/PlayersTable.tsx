@@ -30,8 +30,6 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Email</TableHead>
             <TableHead>Handicap</TableHead>
             <TableHead>Tee Box</TableHead>
             <TableHead>Team</TableHead>
@@ -43,8 +41,6 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
           {players.map((player) => (
             <TableRow key={player.id}>
               <TableCell className="font-medium">{player.name}</TableCell>
-              <TableCell>{player.phone || "-"}</TableCell>
-              <TableCell>{player.email || "-"}</TableCell>
               <TableCell>{player.handicap || "-"}</TableCell>
               <TableCell>
                 {player.tee_boxes ? (

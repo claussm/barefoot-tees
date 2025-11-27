@@ -254,39 +254,33 @@ export type Database = {
         Row: {
           created_at: string
           default_team_id: string | null
-          email: string | null
           handicap: number | null
           id: string
           is_active: boolean
           name: string
           notes: string | null
-          phone: string | null
           tee_box_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           default_team_id?: string | null
-          email?: string | null
           handicap?: number | null
           id?: string
           is_active?: boolean
           name: string
           notes?: string | null
-          phone?: string | null
           tee_box_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           default_team_id?: string | null
-          email?: string | null
           handicap?: number | null
           id?: string
           is_active?: boolean
           name?: string
           notes?: string | null
-          phone?: string | null
           tee_box_id?: string | null
           updated_at?: string
         }

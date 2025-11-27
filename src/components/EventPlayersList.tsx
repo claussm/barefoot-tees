@@ -294,7 +294,6 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Phone</TableHead>
               <TableHead>Handicap</TableHead>
               <TableHead>RSVP</TableHead>
               <TableHead>Status</TableHead>
@@ -304,7 +303,6 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
             {filteredPlayers?.map((ep) => (
               <TableRow key={ep.id}>
                 <TableCell className="font-medium">{ep.players.name}</TableCell>
-                <TableCell>{ep.players.phone || "-"}</TableCell>
                 <TableCell>{ep.players.handicap || "-"}</TableCell>
                 <TableCell>
                   <Select

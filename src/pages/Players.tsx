@@ -86,7 +86,7 @@ const Players = () => {
     setShowDeactivateDialog(false);
     setPlayerToDeactivate(null);
   };
-  const filteredPlayers = players?.filter(player => player.name.toLowerCase().includes(searchTerm.toLowerCase()) || player.email?.toLowerCase().includes(searchTerm.toLowerCase()) || player.phone?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredPlayers = players?.filter(player => player.name.toLowerCase().includes(searchTerm.toLowerCase()));
   return <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
