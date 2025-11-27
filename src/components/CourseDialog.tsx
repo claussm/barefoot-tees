@@ -23,7 +23,6 @@ export function CourseDialog({ open, onOpenChange, course }: CourseDialogProps) 
   const { register, handleSubmit, reset } = useForm({
     defaultValues: {
       name: "",
-      phone: "",
       notes: "",
     },
   });
@@ -32,13 +31,11 @@ export function CourseDialog({ open, onOpenChange, course }: CourseDialogProps) 
     if (course) {
       reset({
         name: course.name || "",
-        phone: course.phone || "",
         notes: course.notes || "",
       });
     } else {
       reset({
         name: "",
-        phone: "",
         notes: "",
       });
     }
@@ -114,33 +111,24 @@ export function CourseDialog({ open, onOpenChange, course }: CourseDialogProps) 
             <DialogTitle>{course ? "Edit Course" : "Add Course"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Course Name *</Label>
-              <Input
-                id="name"
-                {...register("name", { required: true })}
-                placeholder="e.g., Norman Golf Club"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Course Name *</Label>
+            <Input
+              id="name"
+              {...register("name", { required: true })}
+              placeholder="e.g., Norman Golf Club"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                {...register("phone")}
-                placeholder="e.g., (555) 123-4567"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                {...register("notes")}
-                placeholder="Any additional information about the course..."
-                rows={3}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              {...register("notes")}
+              placeholder="Any additional information about the course..."
+              rows={3}
+            />
+          </div>
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

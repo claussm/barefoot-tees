@@ -56,16 +56,24 @@ function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-auto p-4">
-          <Button
-            variant="outline"
-            onClick={signOut}
-            className="w-full justify-start"
-            size={isCollapsed ? "icon" : "default"}
-          >
-            <LogOut className="h-4 w-4" />
-            {!isCollapsed && <span className="ml-2">Sign Out</span>}
-          </Button>
+        <div className="mt-auto">
+          <div className="p-4">
+            <Button
+              variant="outline"
+              onClick={signOut}
+              className="w-full justify-start"
+              size={isCollapsed ? "icon" : "default"}
+            >
+              <LogOut className="h-4 w-4" />
+              {!isCollapsed && <span className="ml-2">Sign Out</span>}
+            </Button>
+          </div>
+          {!isCollapsed && (
+            <div className="px-4 pb-4 text-xs text-muted-foreground text-center border-t pt-4">
+              Barefoot Resort Clubhouse<br />
+              (843) 390-3200
+            </div>
+          )}
         </div>
       </SidebarContent>
     </Sidebar>
