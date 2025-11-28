@@ -127,6 +127,16 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
             </div>
 
             <div>
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(843) 555-1234"
+                {...register("phone")}
+              />
+            </div>
+
+            <div>
               <Label htmlFor="handicap">Handicap</Label>
               <Input
                 id="handicap"

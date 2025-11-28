@@ -127,6 +127,7 @@ export type Database = {
           id: string
           note: string | null
           player_id: string
+          rsvp_sent_at: string | null
           rsvp_status: string | null
           status: string
         }
@@ -136,6 +137,7 @@ export type Database = {
           id?: string
           note?: string | null
           player_id: string
+          rsvp_sent_at?: string | null
           rsvp_status?: string | null
           status?: string
         }
@@ -145,6 +147,7 @@ export type Database = {
           id?: string
           note?: string | null
           player_id?: string
+          rsvp_sent_at?: string | null
           rsvp_status?: string | null
           status?: string
         }
@@ -376,6 +379,7 @@ export type Database = {
           is_active: boolean
           name: string
           notes: string | null
+          phone: string | null
           tee_box_id: string | null
           updated_at: string
         }
@@ -387,6 +391,7 @@ export type Database = {
           is_active?: boolean
           name: string
           notes?: string | null
+          phone?: string | null
           tee_box_id?: string | null
           updated_at?: string
         }
@@ -398,6 +403,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           notes?: string | null
+          phone?: string | null
           tee_box_id?: string | null
           updated_at?: string
         }
@@ -480,6 +486,41 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rsvp_schedules: {
+        Row: {
+          created_at: string
+          created_by: string
+          event_id: string
+          id: string
+          scheduled_for: string
+          sent_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          event_id: string
+          id?: string
+          scheduled_for: string
+          sent_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          event_id?: string
+          id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rsvp_schedules_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
