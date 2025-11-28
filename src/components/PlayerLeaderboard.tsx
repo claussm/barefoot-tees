@@ -66,10 +66,20 @@ export function PlayerLeaderboard({ playerStats, teams, isLoading }: PlayerLeade
       Number(b.average) - Number(a.average)
     );
     
-    // Create a map of player id -> rank
+    // Create a map of player id -> rank using golf-style tie handling
     const rankMap = new Map<string, number>();
+    let currentRank = 1;
+    
     sortedByAvg.forEach((player, index) => {
-      rankMap.set(player.id, index + 1);
+      // Check if this player is tied with the previous player
+      if (index > 0 && Number(player.average) === Number(sortedByAvg[index - 1].average)) {
+        // Same score as previous player, use the same rank
+        rankMap.set(player.id, rankMap.get(sortedByAvg[index - 1].id)!);
+      } else {
+        // Different score, use current position (which accounts for ties)
+        currentRank = index + 1;
+        rankMap.set(player.id, currentRank);
+      }
     });
     
     return rankMap;
