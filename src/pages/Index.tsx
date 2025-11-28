@@ -119,7 +119,7 @@ const Index = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Upcoming Events</CardTitle>
+            <CardTitle>Upcoming Games</CardTitle>
             <Button onClick={() => setEventDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Create Event

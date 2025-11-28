@@ -1,4 +1,4 @@
-import { Home, Users, MapPin, TrendingUp, LogOut } from "lucide-react";
+import { Home, Users, MapPin, TrendingUp, LogOut, Calendar } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -17,7 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { title: "Events", url: "/", icon: Home },
+  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Games", url: "/games", icon: Calendar },
   { title: "Players", url: "/players", icon: Users },
   { title: "Courses", url: "/courses", icon: MapPin },
   { title: "Statistics", url: "/statistics", icon: TrendingUp },
