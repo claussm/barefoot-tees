@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Users, Calendar, Award } from "lucide-react";
 import { EventDialog } from "@/components/EventDialog";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import heroImage from "@/assets/golf-hero.jpg";
 const Index = () => {
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
@@ -134,7 +134,7 @@ const Index = () => {
                           {event.course_name}
                         </h3>
                         <p className="text-sm text-muted">
-                          {format(new Date(event.date), "MMMM d, yyyy")} • {event.holes} holes
+                          {format(parseISO(event.date + "T00:00:00"), "MMMM d, yyyy")} • {event.holes} holes
                         </p>
                       </div>
                       <div className="text-right">
