@@ -11,7 +11,7 @@ import { TeeSheet } from "@/components/TeeSheet";
 import { EventScoring } from "@/components/EventScoring";
 import { EventDialog } from "@/components/EventDialog";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -204,7 +204,7 @@ const EventDetail = () => {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">{event.course_name}</h1>
                 <p className="text-sm text-muted">
-                  {format(new Date(event.date), "MMMM d, yyyy")} • {event.holes} holes
+                  {format(parseISO(event.date + "T00:00:00"), "MMMM d, yyyy")} • {event.holes} holes
                 </p>
               </div>
             </div>
@@ -313,7 +313,7 @@ const EventDetail = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{event.course_name}" on {format(new Date(event.date), "MMMM d, yyyy")}? 
+              Are you sure you want to delete "{event.course_name}" on {format(parseISO(event.date + "T00:00:00"), "MMMM d, yyyy")}? 
               This will permanently delete the event along with all player assignments, groups, and scores. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
