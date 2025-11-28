@@ -1,19 +1,23 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Users, History, CheckCircle, Trash2 } from "lucide-react";
+import { Plus, Users, History, CheckCircle, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface EventPlayersListProps {
   eventId: string;
   maxPlayers: number;
 }
+
+type SortField = "name" | "points" | null;
+type SortDirection = "asc" | "desc";
 
 export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps) => {
   const queryClient = useQueryClient();
@@ -21,6 +25,9 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const { data: eventPlayers } = useQuery({
     queryKey: ["event_players", eventId],
@@ -28,6 +35,18 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
       const { data, error } = await supabase
         .from("event_players")
         .select("*, players(*)")
+        .eq("event_id", eventId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: playerPoints } = useQuery({
+    queryKey: ["player_points", eventId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("round_scores")
+        .select("player_id, points")
         .eq("event_id", eventId);
       if (error) throw error;
       return data;
@@ -240,9 +259,80 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     }
   };
 
-  const filteredPlayers = eventPlayers?.filter((ep) => 
-    statusFilter === "all" || ep.status === statusFilter
-  );
+  const bulkUpdateRsvpMutation = useMutation({
+    mutationFn: async (rsvpStatus: string | null) => {
+      const { error } = await supabase
+        .from("event_players")
+        .update({ rsvp_status: rsvpStatus })
+        .in("id", Array.from(selectedPlayers));
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      setSelectedPlayers(new Set());
+      toast.success("Bulk RSVP updated");
+    },
+  });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 ml-2 inline" />;
+    return sortDirection === "asc" ? 
+      <ArrowUp className="h-4 w-4 ml-2 inline" /> : 
+      <ArrowDown className="h-4 w-4 ml-2 inline" />;
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedPlayers.size === sortedAndFilteredPlayers?.length) {
+      setSelectedPlayers(new Set());
+    } else {
+      setSelectedPlayers(new Set(sortedAndFilteredPlayers?.map(ep => ep.id) || []));
+    }
+  };
+
+  const toggleSelectPlayer = (playerId: string) => {
+    const newSelected = new Set(selectedPlayers);
+    if (newSelected.has(playerId)) {
+      newSelected.delete(playerId);
+    } else {
+      newSelected.add(playerId);
+    }
+    setSelectedPlayers(newSelected);
+  };
+
+  const sortedAndFilteredPlayers = useMemo(() => {
+    let filtered = eventPlayers?.filter((ep) => 
+      statusFilter === "all" || ep.status === statusFilter
+    ) || [];
+
+    if (sortField === "name") {
+      filtered = [...filtered].sort((a, b) => {
+        const nameA = a.players.name.toLowerCase();
+        const nameB = b.players.name.toLowerCase();
+        return sortDirection === "asc" 
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      });
+    } else if (sortField === "points") {
+      filtered = [...filtered].sort((a, b) => {
+        const pointsA = playerPoints?.find(p => p.player_id === a.player_id)?.points || 0;
+        const pointsB = playerPoints?.find(p => p.player_id === b.player_id)?.points || 0;
+        return sortDirection === "asc" 
+          ? pointsA - pointsB
+          : pointsB - pointsA;
+      });
+    }
+
+    return filtered;
+  }, [eventPlayers, statusFilter, sortField, sortDirection, playerPoints]);
 
   const playingCount = eventPlayers?.filter((ep) => ep.status === "playing").length || 0;
 
@@ -323,71 +413,128 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
         </div>
       </div>
 
+      {selectedPlayers.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+          <span className="text-sm font-medium">
+            {selectedPlayers.size} player{selectedPlayers.size > 1 ? "s" : ""} selected
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkUpdateRsvpMutation.mutate("yes")}
+            >
+              Set RSVP: Yes
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkUpdateRsvpMutation.mutate("no")}
+            >
+              Set RSVP: No
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkUpdateRsvpMutation.mutate(null)}
+            >
+              Set RSVP: No Response
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedPlayers(new Set())}
+            >
+              Clear Selection
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="border border-border rounded-lg overflow-hidden bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Handicap</TableHead>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedPlayers.size === sortedAndFilteredPlayers?.length && sortedAndFilteredPlayers?.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
+                Name {getSortIcon("name")}
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("points")}>
+                Points {getSortIcon("points")}
+              </TableHead>
               <TableHead>RSVP</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPlayers?.map((ep) => (
-              <TableRow key={ep.id}>
-                <TableCell className="font-medium">{ep.players.name}</TableCell>
-                <TableCell>{ep.players.handicap || "-"}</TableCell>
-                <TableCell>
-                  <Select
-                    value={ep.rsvp_status || "no_response"}
-                    onValueChange={(value) =>
-                      updateRsvpMutation.mutate({ 
-                        id: ep.id, 
-                        rsvp_status: value === "no_response" ? null : value 
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no_response">No Response</SelectItem>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={ep.status}
-                    onValueChange={(value) =>
-                      updateStatusMutation.mutate({ id: ep.id, status: value })
-                    }
-                  >
-                    <SelectTrigger className="w-36">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="invited">Invited</SelectItem>
-                      <SelectItem value="playing">Playing</SelectItem>
-                      <SelectItem value="waitlist">Waitlist</SelectItem>
-                      <SelectItem value="not_playing">Not Playing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteClick(ep.id, ep.players.name)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {sortedAndFilteredPlayers?.map((ep) => {
+              const points = playerPoints?.find(p => p.player_id === ep.player_id)?.points || 0;
+              return (
+                <TableRow key={ep.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedPlayers.has(ep.id)}
+                      onCheckedChange={() => toggleSelectPlayer(ep.id)}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{ep.players.name}</TableCell>
+                  <TableCell>{points}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={ep.rsvp_status || "no_response"}
+                      onValueChange={(value) =>
+                        updateRsvpMutation.mutate({ 
+                          id: ep.id, 
+                          rsvp_status: value === "no_response" ? null : value 
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no_response">No Response</SelectItem>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={ep.status}
+                      onValueChange={(value) =>
+                        updateStatusMutation.mutate({ id: ep.id, status: value })
+                      }
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="invited">Invited</SelectItem>
+                        <SelectItem value="playing">Playing</SelectItem>
+                        <SelectItem value="waitlist">Waitlist</SelectItem>
+                        <SelectItem value="not_playing">Not Playing</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteClick(ep.id, ep.players.name)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
