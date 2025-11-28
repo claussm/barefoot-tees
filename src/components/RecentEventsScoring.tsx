@@ -1,9 +1,18 @@
 import { useNavigate } from "react-router-dom";
-import { Calendar, Users, CheckCircle, AlertCircle } from "lucide-react";
+import { Calendar, Users, CheckCircle, AlertCircle, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EventScore {
   eventId: string;
@@ -20,6 +29,22 @@ interface RecentEventsScoringProps {
 
 export function RecentEventsScoring({ events, isLoading }: RecentEventsScoringProps) {
   const navigate = useNavigate();
+
+  const { data: allEvents } = useQuery({
+    queryKey: ["all-events-for-scoring"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, course_name, date")
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleEventSelect = (eventId: string) => {
+    navigate(`/events/${eventId}`);
+  };
 
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading recent events...</div>;
@@ -38,6 +63,31 @@ export function RecentEventsScoring({ events, isLoading }: RecentEventsScoringPr
 
   return (
     <div className="space-y-4">
+      <Card className="bg-muted/50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">
+                Select an event to enter scores
+              </label>
+              <Select onValueChange={handleEventSelect}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Choose an event..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allEvents?.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>
+                      {event.course_name} - {format(new Date(event.date), "MMM d, yyyy")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Plus className="h-5 w-5 text-muted-foreground mt-6" />
+          </div>
+        </CardContent>
+      </Card>
+
       {events.map((event) => {
         const isFullyScored = event.scoredCount === event.playerCount;
         const scoringProgress = event.playerCount > 0
