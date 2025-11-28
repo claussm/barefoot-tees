@@ -1,4 +1,1 @@
 project_id = "eondrbhasvkvcbbfmuew"
-
-[functions.rsvp-webhook]
-verify_jwt = false

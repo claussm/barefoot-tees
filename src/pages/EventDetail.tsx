@@ -219,22 +219,6 @@ const EventDetail = () => {
                   <FileText className="mr-2 h-4 w-4" />
                   Print
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    supabase.functions.invoke('send-rsvp', {
-                      body: { eventId: id }
-                    }).then(({ data, error }) => {
-                      if (error) {
-                        toast.error('Failed to send RSVPs: ' + error.message);
-                      } else {
-                        toast.success(data.message);
-                      }
-                    });
-                  }}
-                >
-                  Send RSVPs
-                </Button>
                 <Button
                   variant={event.is_locked ? "outline" : "default"}
                   onClick={() => lockMutation.mutate(!event.is_locked)}
