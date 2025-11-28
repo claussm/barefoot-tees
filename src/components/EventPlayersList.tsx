@@ -341,22 +341,21 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
                 <TableCell>{ep.players.handicap || "-"}</TableCell>
                 <TableCell>
                   <Select
-                    value={ep.rsvp_status || "none"}
+                    value={ep.rsvp_status || "no_response"}
                     onValueChange={(value) =>
                       updateRsvpMutation.mutate({ 
                         id: ep.id, 
-                        rsvp_status: value === "none" ? null : value 
+                        rsvp_status: value === "no_response" ? null : value 
                       })
                     }
                   >
-                    <SelectTrigger className="w-28">
+                    <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">-</SelectItem>
+                      <SelectItem value="no_response">No Response</SelectItem>
                       <SelectItem value="yes">Yes</SelectItem>
                       <SelectItem value="no">No</SelectItem>
-                      <SelectItem value="maybe">Maybe</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
