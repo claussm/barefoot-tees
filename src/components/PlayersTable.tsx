@@ -40,9 +40,7 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Handicap</TableHead>
             <TableHead>Tee Box</TableHead>
-            <TableHead>Team</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -51,7 +49,6 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
           {players.map((player) => (
             <TableRow key={player.id}>
               <TableCell className="font-medium">{player.name}</TableCell>
-              <TableCell>{player.handicap || "-"}</TableCell>
               <TableCell>
                 {player.tee_boxes ? (
                   <div className="flex items-center gap-2">
@@ -60,19 +57,6 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
                       style={{ backgroundColor: player.tee_boxes.color || "#ccc" }}
                     />
                     <span className="text-sm">{player.tee_boxes.name}</span>
-                  </div>
-                ) : (
-                  "-"
-                )}
-              </TableCell>
-              <TableCell>
-                {player.player_teams ? (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: player.player_teams.color || "#3B82F6" }}
-                    />
-                    <span className="text-sm">{player.player_teams.name}</span>
                   </div>
                 ) : (
                   "-"

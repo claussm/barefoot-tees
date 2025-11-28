@@ -46,19 +46,6 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
     },
   });
 
-  const { data: teams } = useQuery({
-    queryKey: ["teams_active"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_teams")
-        .select("*")
-        .eq("is_active", true)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       // Remove joined relation data that aren't actual columns
@@ -137,16 +124,6 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
             </div>
 
             <div>
-              <Label htmlFor="handicap">Handicap</Label>
-              <Input
-                id="handicap"
-                type="number"
-                step="0.1"
-                {...register("handicap")}
-              />
-            </div>
-
-            <div>
               <Label htmlFor="tee_box_id">Tee Box</Label>
               <Select
                 value={watch("tee_box_id") || "none"}
@@ -165,32 +142,6 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
                           style={{ backgroundColor: teeBox.color || "#ccc" }}
                         />
                         {teeBox.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="default_team_id">Default Team</Label>
-              <Select
-                value={watch("default_team_id") || "none"}
-                onValueChange={(value) => setValue("default_team_id", value === "none" ? null : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {teams?.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded"
-                          style={{ backgroundColor: team.color || "#3B82F6" }}
-                        />
-                        {team.name}
                       </div>
                     </SelectItem>
                   ))}

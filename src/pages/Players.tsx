@@ -25,8 +25,7 @@ const Players = () => {
     queryFn: async () => {
       let query = supabase.from("players").select(`
           *,
-          tee_boxes (*),
-          player_teams!players_default_team_id_fkey (*)
+          tee_boxes (*)
         `).order("name");
       if (showActiveOnly) {
         query = query.eq("is_active", true);
