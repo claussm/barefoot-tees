@@ -153,23 +153,23 @@ export const TeeSheet = ({ eventId, groups, isLocked, slotsPerGroup }: TeeSheetP
   };
 
   return (
-    <div className="space-y-6">
-      {!isLocked && unassignedPlayers && unassignedPlayers.length > 0 && (
-        <div className="border border-border rounded-lg p-4 bg-accent/20 print:hidden">
-          <h3 className="font-semibold mb-3 text-foreground">Unassigned Players</h3>
-          <div className="flex flex-wrap gap-2">
-            {unassignedPlayers.map((ep) => (
-              <UnassignedPlayer 
-                key={ep.player_id} 
-                playerId={ep.player_id}
-                playerName={ep.players.name}
-              />
-            ))}
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <div className="space-y-6">
+        {!isLocked && unassignedPlayers && unassignedPlayers.length > 0 && (
+          <div className="border border-border rounded-lg p-4 bg-accent/20 print:hidden">
+            <h3 className="font-semibold mb-3 text-foreground">Unassigned Players</h3>
+            <div className="flex flex-wrap gap-2">
+              {unassignedPlayers.map((ep) => (
+                <UnassignedPlayer 
+                  key={ep.player_id} 
+                  playerId={ep.player_id}
+                  playerName={ep.players.name}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
             <TeeSheetGroup
@@ -181,8 +181,8 @@ export const TeeSheet = ({ eventId, groups, isLocked, slotsPerGroup }: TeeSheetP
             />
           ))}
         </div>
-      </DndContext>
-    </div>
+      </div>
+    </DndContext>
   );
 };
 
