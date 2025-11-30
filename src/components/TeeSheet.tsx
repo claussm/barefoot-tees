@@ -47,38 +47,62 @@ export const TeeSheet = ({ eventId, groups, isLocked, slotsPerGroup }: TeeSheetP
       targetGroupId: string;
       targetPosition: number;
     }) => {
+      // Get the player's current assignment (if any)
+      const { data: currentAssignment } = await supabase
+        .from("group_assignments")
+        .select("*")
+        .eq("player_id", playerId)
+        .maybeSingle();
+
       // Check if target position is occupied
-      const { data: existingAssignment } = await supabase
+      const { data: targetAssignment } = await supabase
         .from("group_assignments")
         .select("*")
         .eq("group_id", targetGroupId)
         .eq("position", targetPosition)
-        .single();
+        .maybeSingle();
 
-      // Remove player from current position
-      await supabase.from("group_assignments").delete().eq("player_id", playerId);
+      // If target is occupied, perform a swap
+      if (targetAssignment) {
+        // Remove both players from their current positions
+        await supabase.from("group_assignments").delete().eq("player_id", playerId);
+        await supabase.from("group_assignments").delete().eq("id", targetAssignment.id);
 
-      // If target position was occupied, remove that player too
-      if (existingAssignment) {
-        await supabase
-          .from("group_assignments")
-          .delete()
-          .eq("id", existingAssignment.id);
+        // Place dragged player in target position
+        await supabase.from("group_assignments").insert({
+          group_id: targetGroupId,
+          player_id: playerId,
+          position: targetPosition,
+        });
+
+        // Place target player in dragged player's old position (if they had one)
+        if (currentAssignment) {
+          await supabase.from("group_assignments").insert({
+            group_id: currentAssignment.group_id,
+            player_id: targetAssignment.player_id,
+            position: currentAssignment.position,
+          });
+        }
+        // Otherwise, target player becomes unassigned
+      } else {
+        // Target slot is empty, just move the player
+        if (currentAssignment) {
+          await supabase.from("group_assignments").delete().eq("player_id", playerId);
+        }
+
+        const { error } = await supabase.from("group_assignments").insert({
+          group_id: targetGroupId,
+          player_id: playerId,
+          position: targetPosition,
+        });
+
+        if (error) throw error;
       }
-
-      // Add player to new position
-      const { error } = await supabase.from("group_assignments").insert({
-        group_id: targetGroupId,
-        player_id: playerId,
-        position: targetPosition,
-      });
-
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups", eventId] });
       queryClient.invalidateQueries({ queryKey: ["unassigned_players", eventId] });
-      toast.success("Player moved");
+      toast.success("Players updated");
     },
     onError: (error) => {
       console.error("Move error:", error);
