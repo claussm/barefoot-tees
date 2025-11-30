@@ -242,7 +242,7 @@ const Index = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/events/${event.id}/scoring`)}
+                        onClick={() => navigate(`/events/${event.id}`)}
                       >
                         Enter Scores
                       </Button>
