@@ -145,6 +145,7 @@ const TeeSheetSlot = ({ groupId, position, assignment, isLocked, onRemove }: Tee
   const draggableStyle = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.5 : 1,
+    transition: isDragging ? "none" : "all 0.2s ease",
   };
 
   return (
@@ -152,9 +153,9 @@ const TeeSheetSlot = ({ groupId, position, assignment, isLocked, onRemove }: Tee
       ref={setDroppableRef}
       id={`slot-${groupId}-${position}`}
       className={`
-        min-h-[2.5rem] px-3 py-2 rounded border transition-colors
+        min-h-[2.5rem] px-3 py-2 rounded border transition-all duration-200
         ${assignment ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-dashed border-border"}
-        ${isOver && !isLocked ? "border-primary bg-primary/10" : ""}
+        ${isOver && !isLocked ? "border-primary bg-primary/10 scale-[1.02] shadow-sm" : ""}
         flex items-center justify-between
       `}
     >

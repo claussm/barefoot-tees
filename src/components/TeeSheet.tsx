@@ -47,10 +47,26 @@ export const TeeSheet = ({ eventId, groups, isLocked, slotsPerGroup }: TeeSheetP
       targetGroupId: string;
       targetPosition: number;
     }) => {
-      // Remove from current group if assigned
+      // Check if target position is occupied
+      const { data: existingAssignment } = await supabase
+        .from("group_assignments")
+        .select("*")
+        .eq("group_id", targetGroupId)
+        .eq("position", targetPosition)
+        .single();
+
+      // Remove player from current position
       await supabase.from("group_assignments").delete().eq("player_id", playerId);
 
-      // Add to new group
+      // If target position was occupied, remove that player too
+      if (existingAssignment) {
+        await supabase
+          .from("group_assignments")
+          .delete()
+          .eq("id", existingAssignment.id);
+      }
+
+      // Add player to new position
       const { error } = await supabase.from("group_assignments").insert({
         group_id: targetGroupId,
         player_id: playerId,
@@ -62,8 +78,10 @@ export const TeeSheet = ({ eventId, groups, isLocked, slotsPerGroup }: TeeSheetP
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups", eventId] });
       queryClient.invalidateQueries({ queryKey: ["unassigned_players", eventId] });
+      toast.success("Player moved");
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Move error:", error);
       toast.error("Failed to move player");
     },
   });
@@ -150,13 +168,14 @@ const UnassignedPlayer = ({ playerId, playerName }: UnassignedPlayerProps) => {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.5 : 1,
     cursor: "move",
+    transition: isDragging ? "none" : "all 0.2s ease",
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="px-3 py-1 bg-card border border-border rounded text-sm text-foreground hover:border-primary transition-colors"
+      className="px-3 py-1 bg-card border border-border rounded text-sm text-foreground hover:border-primary hover:shadow-sm hover:scale-105 transition-all duration-200"
       {...attributes}
       {...listeners}
     >
