@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Users, History, CheckCircle, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Users, History, CheckCircle, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Save } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface EventPlayersListProps {
   eventId: string;
@@ -28,6 +30,7 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [scores, setScores] = useState<Record<string, string>>({});
 
   const { data: eventPlayers } = useQuery({
     queryKey: ["event_players", eventId],
@@ -41,7 +44,7 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
   });
 
-  const { data: playerPoints } = useQuery({
+  const { data: existingScores } = useQuery({
     queryKey: ["player_points", eventId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -51,6 +54,34 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: playerAverages } = useQuery({
+    queryKey: ["player_averages", eventPlayers],
+    queryFn: async () => {
+      if (!eventPlayers) return {};
+      
+      const averages: Record<string, number> = {};
+      await Promise.all(
+        eventPlayers.map(async (ep) => {
+          const { data } = await supabase
+            .from("round_scores")
+            .select("points")
+            .eq("player_id", ep.player_id)
+            .order("created_at", { ascending: false })
+            .limit(6);
+          
+          if (data && data.length > 0) {
+            const total = data.reduce((sum, s) => sum + Number(s.points), 0);
+            averages[ep.player_id] = total / data.length;
+          } else {
+            averages[ep.player_id] = 0;
+          }
+        })
+      );
+      return averages;
+    },
+    enabled: !!eventPlayers,
   });
 
   const { data: availablePlayers } = useQuery({
@@ -274,6 +305,50 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
   });
 
+  const saveScoresMutation = useMutation({
+    mutationFn: async () => {
+      const scoresToSave = Object.entries(scores)
+        .filter(([_, points]) => points.trim() !== "")
+        .map(([playerId, points]) => ({
+          event_id: eventId,
+          player_id: playerId,
+          points: parseFloat(points),
+        }));
+
+      if (scoresToSave.length === 0) {
+        throw new Error("No scores to save");
+      }
+
+      // Delete existing scores for players being updated
+      const playerIds = scoresToSave.map(s => s.player_id);
+      await supabase
+        .from("round_scores")
+        .delete()
+        .eq("event_id", eventId)
+        .in("player_id", playerIds);
+
+      // Insert new scores
+      const { error } = await supabase.from("round_scores").insert(scoresToSave);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["player_points", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["player_averages"] });
+      queryClient.invalidateQueries({ queryKey: ["player-statistics"] });
+      queryClient.invalidateQueries({ queryKey: ["team-statistics"] });
+      queryClient.invalidateQueries({ queryKey: ["top_players_dashboard"] });
+      toast.success("Scores saved successfully");
+      setScores({});
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to save scores");
+    },
+  });
+
+  const handleScoreChange = (playerId: string, value: string) => {
+    setScores((prev) => ({ ...prev, [playerId]: value }));
+  };
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -323,8 +398,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
       });
     } else if (sortField === "points") {
       filtered = [...filtered].sort((a, b) => {
-        const pointsA = playerPoints?.find(p => p.player_id === a.player_id)?.points || 0;
-        const pointsB = playerPoints?.find(p => p.player_id === b.player_id)?.points || 0;
+        const pointsA = existingScores?.find(p => p.player_id === a.player_id)?.points || 0;
+        const pointsB = existingScores?.find(p => p.player_id === b.player_id)?.points || 0;
         return sortDirection === "asc" 
           ? pointsA - pointsB
           : pointsB - pointsA;
@@ -332,12 +407,26 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     }
 
     return filtered;
-  }, [eventPlayers, statusFilter, sortField, sortDirection, playerPoints]);
+  }, [eventPlayers, statusFilter, sortField, sortDirection, existingScores]);
+
+  const hasUnsavedScores = Object.keys(scores).length > 0;
 
   const playingCount = eventPlayers?.filter((ep) => ep.status === "playing").length || 0;
 
   return (
     <div className="space-y-4">
+      {hasUnsavedScores && (
+        <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/20">
+          <span className="text-sm font-medium">
+            You have unsaved score changes
+          </span>
+          <Button onClick={() => saveScoresMutation.mutate()} disabled={saveScoresMutation.isPending}>
+            <Save className="mr-2 h-4 w-4" />
+            {saveScoresMutation.isPending ? "Saving..." : "Save Scores"}
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex gap-4 items-center">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -467,6 +556,7 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
               <TableHead className="cursor-pointer" onClick={() => handleSort("points")}>
                 Points {getSortIcon("points")}
               </TableHead>
+              <TableHead>6-Rnd Avg</TableHead>
               <TableHead>RSVP</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-16"></TableHead>
@@ -474,7 +564,10 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
           </TableHeader>
           <TableBody>
             {sortedAndFilteredPlayers?.map((ep) => {
-              const points = playerPoints?.find(p => p.player_id === ep.player_id)?.points || 0;
+              const existingScore = existingScores?.find(p => p.player_id === ep.player_id)?.points;
+              const average = playerAverages?.[ep.player_id] || 0;
+              const isPlaying = ep.status === "playing";
+              
               return (
                 <TableRow key={ep.id}>
                   <TableCell>
@@ -484,7 +577,23 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
                     />
                   </TableCell>
                   <TableCell className="font-medium">{ep.players.name}</TableCell>
-                  <TableCell>{points}</TableCell>
+                  <TableCell>
+                    {isPlaying ? (
+                      <Input
+                        type="number"
+                        step="0.5"
+                        placeholder={existingScore?.toString() || "0"}
+                        value={scores[ep.player_id] || ""}
+                        onChange={(e) => handleScoreChange(ep.player_id, e.target.value)}
+                        className="w-24"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{average.toFixed(2)}</Badge>
+                  </TableCell>
                   <TableCell>
                     <Select
                       value={ep.rsvp_status || "no_response"}

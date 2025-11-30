@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Lock, Unlock, FileText, Trash2, Pencil } from "lucide-react";
 import { EventPlayersList } from "@/components/EventPlayersList";
 import { TeeSheet } from "@/components/TeeSheet";
-import { EventScoring } from "@/components/EventScoring";
 import { EventDialog } from "@/components/EventDialog";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -28,7 +27,7 @@ const EventDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { role } = useAuth();
-  const [activeTab, setActiveTab] = useState(role === "scorer" ? "scoring" : "players");
+  const [activeTab, setActiveTab] = useState("players");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
@@ -250,20 +249,19 @@ const EventDetail = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {role === "scorer" ? (
-          <EventScoring eventId={id!} />
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="print:hidden">
-            <TabsList className="grid w-full max-w-2xl grid-cols-3">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="print:hidden">
+          {role === "admin" && (
+            <TabsList className="grid w-full max-w-xl grid-cols-2">
               <TabsTrigger value="players">Players</TabsTrigger>
               <TabsTrigger value="teesheet">Tee Sheet</TabsTrigger>
-              <TabsTrigger value="scoring">Scoring</TabsTrigger>
             </TabsList>
+          )}
 
-            <TabsContent value="players" className="mt-6">
-              <EventPlayersList eventId={id!} maxPlayers={event.max_players} />
-            </TabsContent>
+          <TabsContent value="players" className="mt-6">
+            <EventPlayersList eventId={id!} maxPlayers={event.max_players} />
+          </TabsContent>
 
+          {role === "admin" && (
             <TabsContent value="teesheet" className="mt-6">
               <div className="mb-4">
                 <Button
@@ -280,12 +278,8 @@ const EventDetail = () => {
                 slotsPerGroup={event.slots_per_group}
               />
             </TabsContent>
-
-            <TabsContent value="scoring" className="mt-6">
-              <EventScoring eventId={id!} />
-            </TabsContent>
-          </Tabs>
-        )}
+          )}
+        </Tabs>
 
         <div className="hidden print:block">
           <TeeSheet
