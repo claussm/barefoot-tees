@@ -138,7 +138,7 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
                     <SelectItem key={teeBox.id} value={teeBox.id}>
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-3 h-3 rounded"
+                          className="w-3 h-3 rounded shadow-md"
                           style={{ backgroundColor: teeBox.color || "#ccc" }}
                         />
                         {teeBox.name}

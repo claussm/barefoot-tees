@@ -154,7 +154,7 @@ export function TeesDialog({ open, onOpenChange, course }: TeesDialogProps) {
                         <div className="flex items-center gap-2">
                           {tee.color && (
                             <div
-                              className="w-4 h-4 rounded-full border"
+                              className="w-4 h-4 rounded-full border shadow-md"
                               style={{ backgroundColor: tee.color }}
                             />
                           )}
