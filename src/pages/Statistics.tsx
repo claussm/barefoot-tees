@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Users } from "lucide-react";
 import { PlayerLeaderboard } from "@/components/PlayerLeaderboard";
 import { TeamStandings } from "@/components/TeamStandings";
 import { RecentEventsScoring } from "@/components/RecentEventsScoring";
 
 export default function Statistics() {
   const { role } = useAuth();
+  const [showTeams, setShowTeams] = useState(false);
 
   const { data: playerStats, isLoading: loadingPlayers } = useQuery({
     queryKey: ["player-statistics"],
@@ -193,21 +196,26 @@ export default function Statistics() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Statistics & Scoring</h1>
-        <p className="text-muted-foreground mt-1">
-          View player and team performance, {role === "scorer" && "and manage event scoring"}
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Statistics & Scoring</h1>
+          <p className="text-muted-foreground mt-1">
+            View player and team performance{role === "scorer" && ", and manage event scoring"}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowTeams(!showTeams)}
+          className="flex items-center gap-2"
+        >
+          <Users className="h-4 w-4" />
+          {showTeams ? "View Players" : "View Teams"}
+        </Button>
       </div>
 
-      <Tabs defaultValue={role === "scorer" ? "events" : "players"} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="players">Players</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
-          {role === "scorer" && <TabsTrigger value="events">Recent Events</TabsTrigger>}
-        </TabsList>
-
-        <TabsContent value="players" className="space-y-4">
+      <div className="space-y-6">
+        {!showTeams ? (
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-foreground">Player Leaderboard</h2>
             <PlayerLeaderboard
@@ -216,9 +224,7 @@ export default function Statistics() {
               isLoading={loadingPlayers}
             />
           </div>
-        </TabsContent>
-
-        <TabsContent value="teams" className="space-y-4">
+        ) : (
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-foreground">Team Standings</h2>
             <TeamStandings
@@ -226,20 +232,18 @@ export default function Statistics() {
               isLoading={loadingTeams}
             />
           </div>
-        </TabsContent>
+        )}
 
         {role === "scorer" && (
-          <TabsContent value="events" className="space-y-4">
-            <div>
-              <h2 className="text-2xl font-semibold mb-4 text-foreground">Recent Events</h2>
-              <RecentEventsScoring
-                events={recentEvents || []}
-                isLoading={loadingEvents}
-              />
-            </div>
-          </TabsContent>
+          <div className="mt-8">
+            <h2 className="text-2xl font-semibold mb-4 text-foreground">Recent Events</h2>
+            <RecentEventsScoring
+              events={recentEvents || []}
+              isLoading={loadingEvents}
+            />
+          </div>
         )}
-      </Tabs>
+      </div>
     </div>
   );
 }
