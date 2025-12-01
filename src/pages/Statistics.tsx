@@ -202,12 +202,11 @@ export default function Statistics() {
         subtitle={`View player and team performance${role === "scorer" ? ", and manage event scoring" : ""}`}
         action={
           <Button
-            variant="outline"
-            size="sm"
+            size="lg"
             onClick={() => setShowTeams(!showTeams)}
-            className="flex items-center gap-2 shadow-2xl [filter:_drop-shadow(0_4px_12px_rgb(0_0_0_/_60%))] bg-background/10 border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+            className="shadow-2xl [filter:_drop-shadow(0_4px_12px_rgb(0_0_0_/_60%))]"
           >
-            <Users className="h-4 w-4" />
+            <Users className="h-4 w-4 mr-2" />
             {showTeams ? "View Players" : "View Teams"}
           </Button>
         }
