@@ -77,9 +77,24 @@ const EventDetail = () => {
     },
   });
 
+  const clearTeeSheetMutation = useMutation({
+    mutationFn: async () => {
+      const { error: clearError } = await supabase
+        .from("group_assignments")
+        .delete()
+        .in("group_id", groups?.map(g => g.id) || []);
+
+      if (clearError) throw clearError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups", id] });
+      toast.success("Tee sheet cleared");
+    },
+  });
+
   const autoAssignMutation = useMutation({
     mutationFn: async () => {
-      // First, get all "yes" players
+      // Get all "yes" players with their data
       const { data: yesPlayers, error: playersError } = await supabase
         .from("event_players")
         .select("player_id, players(*)")
@@ -87,6 +102,37 @@ const EventDetail = () => {
         .eq("status", "yes");
 
       if (playersError) throw playersError;
+
+      // Get scores for each player (last 6 rounds)
+      const playersWithScores = await Promise.all(
+        (yesPlayers || []).map(async (ep) => {
+          const { data: scores } = await supabase
+            .from("round_scores")
+            .select("points")
+            .eq("player_id", ep.player_id)
+            .order("created_at", { ascending: false })
+            .limit(6);
+
+          const avgScore = scores && scores.length > 0
+            ? scores.reduce((sum, s) => sum + Number(s.points), 0) / scores.length
+            : 0;
+
+          return {
+            player_id: ep.player_id,
+            name: ep.players.name,
+            tee_box_id: ep.players.tee_box_id,
+            avg_score: avgScore,
+          };
+        })
+      );
+
+      // Sort players by score (high to low), then by tee box for stability
+      const sortedPlayers = playersWithScores.sort((a, b) => {
+        if (b.avg_score !== a.avg_score) {
+          return b.avg_score - a.avg_score;
+        }
+        return (a.tee_box_id || "").localeCompare(b.tee_box_id || "");
+      });
 
       // Clear existing assignments
       const { error: clearError } = await supabase
@@ -96,19 +142,41 @@ const EventDetail = () => {
 
       if (clearError) throw clearError;
 
-      // Assign players to groups
-      let playerIndex = 0;
+      // Snake draft assignment for balanced groups
       const assignments = [];
+      const slotsPerGroup = event?.slots_per_group || 4;
+      const numGroups = groups?.length || 0;
+      
+      let playerIndex = 0;
+      let groupIndex = 0;
+      let forward = true;
 
-      for (const group of groups || []) {
-        for (let position = 1; position <= (event?.slots_per_group || 4); position++) {
-          if (playerIndex < (yesPlayers?.length || 0)) {
-            assignments.push({
-              group_id: group.id,
-              player_id: yesPlayers![playerIndex].player_id,
-              position,
-            });
-            playerIndex++;
+      while (playerIndex < sortedPlayers.length) {
+        const group = groups![groupIndex];
+        const position = Math.floor(playerIndex / numGroups) + 1;
+
+        if (position <= slotsPerGroup) {
+          assignments.push({
+            group_id: group.id,
+            player_id: sortedPlayers[playerIndex].player_id,
+            position,
+          });
+        }
+
+        playerIndex++;
+
+        // Snake draft: alternate direction at the end of each round
+        if (forward) {
+          groupIndex++;
+          if (groupIndex >= numGroups) {
+            groupIndex = numGroups - 1;
+            forward = false;
+          }
+        } else {
+          groupIndex--;
+          if (groupIndex < 0) {
+            groupIndex = 0;
+            forward = true;
           }
         }
       }
@@ -271,12 +339,19 @@ const EventDetail = () => {
 
           {role === "admin" && (
             <TabsContent value="teesheet" className="mt-6">
-              <div className="mb-4">
+              <div className="mb-4 flex gap-2">
                 <Button
                   onClick={() => autoAssignMutation.mutate()}
                   disabled={event.is_locked || autoAssignMutation.isPending}
                 >
                   Auto-Assign Groups
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => clearTeeSheetMutation.mutate()}
+                  disabled={event.is_locked || clearTeeSheetMutation.isPending}
+                >
+                  Clear Tee Sheet
                 </Button>
               </div>
               <TeeSheet
