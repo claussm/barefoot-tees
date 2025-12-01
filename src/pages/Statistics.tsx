@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,25 +7,11 @@ import { Users } from "lucide-react";
 import { PlayerLeaderboard } from "@/components/PlayerLeaderboard";
 import { TeamStandings } from "@/components/TeamStandings";
 import { RecentEventsScoring } from "@/components/RecentEventsScoring";
-import course1 from "@/assets/course-1.jpg";
-import course2 from "@/assets/course-2.jpg";
-import course3 from "@/assets/course-3.jpg";
-import course4 from "@/assets/course-4.jpg";
-import course5 from "@/assets/course-5.jpg";
-import course6 from "@/assets/course-6.jpg";
-import course7 from "@/assets/course-7.jpg";
-import course8 from "@/assets/course-8.jpg";
-import course9 from "@/assets/course-9.jpg";
-
-const courseImages = [course1, course2, course3, course4, course5, course6, course7, course8, course9];
+import { PageHeader } from "@/components/PageHeader";
 
 export default function Statistics() {
   const { role } = useAuth();
   const [showTeams, setShowTeams] = useState(false);
-
-  const headerImage = useMemo(() => {
-    return courseImages[Math.floor(Math.random() * courseImages.length)];
-  }, []);
 
   const { data: playerStats, isLoading: loadingPlayers } = useQuery({
     queryKey: ["player-statistics"],
@@ -211,36 +197,21 @@ export default function Statistics() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative h-64 overflow-hidden">
-        <img
-          src={headerImage}
-          alt="Golf course"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="container mx-auto flex justify-between items-end">
-            <div>
-              <h1 className="text-4xl font-bold text-primary-foreground mb-2 [text-shadow:_0_2px_10px_rgb(0_0_0_/_80%)]">
-                Statistics & Scoring
-              </h1>
-              <p className="text-lg text-primary-foreground/90 [text-shadow:_0_2px_8px_rgb(0_0_0_/_70%)]">
-                View player and team performance{role === "scorer" && ", and manage event scoring"}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowTeams(!showTeams)}
-              className="flex items-center gap-2 shadow-2xl [filter:_drop-shadow(0_4px_12px_rgb(0_0_0_/_60%))] bg-background/10 border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
-            >
-              <Users className="h-4 w-4" />
-              {showTeams ? "View Players" : "View Teams"}
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageHeader 
+        title="Statistics & Scoring"
+        subtitle={`View player and team performance${role === "scorer" ? ", and manage event scoring" : ""}`}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTeams(!showTeams)}
+            className="flex items-center gap-2 shadow-2xl [filter:_drop-shadow(0_4px_12px_rgb(0_0_0_/_60%))] bg-background/10 border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+          >
+            <Users className="h-4 w-4" />
+            {showTeams ? "View Players" : "View Teams"}
+          </Button>
+        }
+      />
 
       <main className="container mx-auto px-4 py-8">
 

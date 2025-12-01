@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,7 @@ import { Plus, Search } from "lucide-react";
 import { PlayerDialog } from "@/components/PlayerDialog";
 import { PlayersTable } from "@/components/PlayersTable";
 import { toast } from "sonner";
-import course1 from "@/assets/course-1.jpg";
-import course2 from "@/assets/course-2.jpg";
-import course3 from "@/assets/course-3.jpg";
-import course4 from "@/assets/course-4.jpg";
-import course5 from "@/assets/course-5.jpg";
-import course6 from "@/assets/course-6.jpg";
-import course7 from "@/assets/course-7.jpg";
-import course8 from "@/assets/course-8.jpg";
-import course9 from "@/assets/course-9.jpg";
-
-const courseImages = [course1, course2, course3, course4, course5, course6, course7, course8, course9];
+import { PageHeader } from "@/components/PageHeader";
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showActiveOnly, setShowActiveOnly] = useState(true);
@@ -28,9 +18,6 @@ const Players = () => {
   const [playerToDeactivate, setPlayerToDeactivate] = useState<any>(null);
   const queryClient = useQueryClient();
 
-  const headerImage = useMemo(() => {
-    return courseImages[Math.floor(Math.random() * courseImages.length)];
-  }, []);
   const {
     data: players,
     isLoading
@@ -103,25 +90,10 @@ const Players = () => {
   
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative h-64 overflow-hidden">
-        <img
-          src={headerImage}
-          alt="Golf course"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="container mx-auto">
-            <h1 className="text-4xl font-bold text-primary-foreground mb-2 [text-shadow:_0_2px_10px_rgb(0_0_0_/_80%)]">
-              Players
-            </h1>
-            <p className="text-lg text-primary-foreground/90 [text-shadow:_0_2px_8px_rgb(0_0_0_/_70%)]">
-              Manage your league roster
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader 
+        title="Players"
+        subtitle="Manage your league roster"
+      />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
