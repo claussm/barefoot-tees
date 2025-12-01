@@ -119,18 +119,19 @@ export default function Courses() {
           alt="Golf course"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="container mx-auto flex justify-between items-end">
             <div>
-              <h1 className="text-4xl font-bold text-primary-foreground mb-2 drop-shadow-lg">
+              <h1 className="text-4xl font-bold text-primary-foreground mb-2 [text-shadow:_0_2px_10px_rgb(0_0_0_/_80%)]">
                 Golf Courses
               </h1>
-              <p className="text-lg text-primary-foreground/90 drop-shadow-md">
+              <p className="text-lg text-primary-foreground/90 [text-shadow:_0_2px_8px_rgb(0_0_0_/_70%)]">
                 Manage courses, tees, and hole configurations
               </p>
             </div>
-            <Button onClick={handleAddCourse} size="lg" className="shadow-2xl drop-shadow-lg">
+            <Button onClick={handleAddCourse} size="lg" className="shadow-2xl [filter:_drop-shadow(0_4px_12px_rgb(0_0_0_/_60%))]">
               <Plus className="h-4 w-4 mr-2" />
               Add Course
             </Button>
