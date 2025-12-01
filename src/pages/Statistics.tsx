@@ -221,10 +221,10 @@ export default function Statistics() {
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="container mx-auto flex justify-between items-end">
             <div>
-              <h1 className="text-4xl font-bold text-primary-foreground mb-2">
+              <h1 className="text-4xl font-bold text-primary-foreground mb-2 drop-shadow-lg">
                 Statistics & Scoring
               </h1>
-              <p className="text-lg text-primary-foreground/90">
+              <p className="text-lg text-primary-foreground/90 drop-shadow-md">
                 View player and team performance{role === "scorer" && ", and manage event scoring"}
               </p>
             </div>
@@ -232,7 +232,7 @@ export default function Statistics() {
               variant="outline"
               size="sm"
               onClick={() => setShowTeams(!showTeams)}
-              className="flex items-center gap-2 shadow-lg bg-background/10 border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+              className="flex items-center gap-2 shadow-2xl drop-shadow-lg bg-background/10 border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
             >
               <Users className="h-4 w-4" />
               {showTeams ? "View Players" : "View Teams"}

@@ -131,10 +131,10 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="container mx-auto">
-            <h1 className="text-4xl font-bold text-primary-foreground mb-2">
+            <h1 className="text-4xl font-bold text-primary-foreground mb-2 drop-shadow-lg">
               Barefoot Tees 
             </h1>
-            <p className="text-lg text-primary-foreground/90">
+            <p className="text-lg text-primary-foreground/90 drop-shadow-md">
               Organize players, events, and tee times with ease
             </p>
           </div>
