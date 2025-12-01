@@ -217,14 +217,15 @@ export default function Statistics() {
           alt="Golf course"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="container mx-auto flex justify-between items-end">
             <div>
-              <h1 className="text-4xl font-bold text-primary-foreground mb-2 drop-shadow-lg">
+              <h1 className="text-4xl font-bold text-primary-foreground mb-2 [text-shadow:_0_2px_10px_rgb(0_0_0_/_80%)]">
                 Statistics & Scoring
               </h1>
-              <p className="text-lg text-primary-foreground/90 drop-shadow-md">
+              <p className="text-lg text-primary-foreground/90 [text-shadow:_0_2px_8px_rgb(0_0_0_/_70%)]">
                 View player and team performance{role === "scorer" && ", and manage event scoring"}
               </p>
             </div>
@@ -232,7 +233,7 @@ export default function Statistics() {
               variant="outline"
               size="sm"
               onClick={() => setShowTeams(!showTeams)}
-              className="flex items-center gap-2 shadow-2xl drop-shadow-lg bg-background/10 border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+              className="flex items-center gap-2 shadow-2xl [filter:_drop-shadow(0_4px_12px_rgb(0_0_0_/_60%))] bg-background/10 border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
             >
               <Users className="h-4 w-4" />
               {showTeams ? "View Players" : "View Teams"}
