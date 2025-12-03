@@ -160,6 +160,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       events: {
@@ -264,6 +271,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "group_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       groups: {
@@ -323,6 +337,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_team_members_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_public"
             referencedColumns: ["id"]
           },
           {
@@ -482,6 +503,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "round_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       rsvp_schedules: {
@@ -572,7 +600,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      players_public: {
+        Row: {
+          created_at: string | null
+          default_team_id: string | null
+          handicap: number | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          tee_box_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_team_id?: string | null
+          handicap?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          tee_box_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_team_id?: string | null
+          handicap?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          tee_box_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_default_team_id_fkey"
+            columns: ["default_team_id"]
+            isOneToOne: false
+            referencedRelation: "player_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_tee_box_id_fkey"
+            columns: ["tee_box_id"]
+            isOneToOne: false
+            referencedRelation: "tee_boxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {

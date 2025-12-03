@@ -16,8 +16,9 @@ export default function Statistics() {
   const { data: playerStats, isLoading: loadingPlayers } = useQuery({
     queryKey: ["player-statistics"],
     queryFn: async () => {
+      // Use players_public view to respect PII restrictions for non-admin users
       const { data: players, error: playersError } = await supabase
-        .from("players")
+        .from("players_public")
         .select(`
           id,
           name,
