@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { KenBurnsBackground } from '@/components/KenBurnsBackground';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Please enter a valid email address'),
@@ -100,8 +101,9 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <KenBurnsBackground />
+      <Card className="w-full max-w-md relative z-10 bg-card/95 backdrop-blur-sm shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Golf League Manager</CardTitle>
           <CardDescription>
