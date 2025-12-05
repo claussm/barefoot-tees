@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Pencil, Check, X, Trophy } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface PlayerPointsDialogProps {
   open: boolean;
@@ -160,7 +160,7 @@ export const PlayerPointsDialog = ({ open, onOpenChange, player }: PlayerPointsD
                 <TableRow key={score.id} className={!countsTowardAverage ? "opacity-50" : ""}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      {score.events ? format(new Date(score.events.date), "MMM d, yyyy") : "N/A"}
+                      {score.events ? format(parseISO(score.events.date + "T00:00:00"), "MMM d, yyyy") : "N/A"}
                       {countsTowardAverage && (
                         <span className="text-xs text-primary font-medium">★</span>
                       )}
