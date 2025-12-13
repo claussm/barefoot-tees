@@ -23,7 +23,8 @@ export function getPlayerScoreToBeat(playerStat?: PlayerStat): string {
 
 /**
  * Calculate a group's "score to beat" - average of all players' individual scores to beat
- * Returns null if any player is "New" or if group is empty
+ * Uses available data for all players, even if they have fewer than 6 games (split the difference approach)
+ * Returns null only if group is empty or no players have any games played
  */
 export function getGroupScoreToBeat(
   playerIds: string[],
@@ -35,11 +36,10 @@ export function getGroupScoreToBeat(
 
   for (const playerId of playerIds) {
     const stat = playerStatsMap[playerId];
-    if (!stat || stat.roundsPlayed < 6) {
-      // If any player is "New", we can't calculate a group score
-      return null;
+    // Include any player who has at least 1 game played
+    if (stat && stat.roundsPlayed > 0 && stat.average > 0) {
+      validStats.push(stat.average);
     }
-    validStats.push(stat.average);
   }
 
   if (validStats.length === 0) return null;
