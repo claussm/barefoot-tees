@@ -199,6 +199,8 @@ All colors MUST be HSL.
     padding-bottom: 0.5rem;
     border-bottom: 2px solid #333;
     position: static !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 
   /* Remove any container padding that might cause blank space */
@@ -213,6 +215,8 @@ All colors MUST be HSL.
     max-width: none;
     margin-top: 0 !important;
     padding-top: 0 !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
 
   /* Make group cards stack nicely */
@@ -220,8 +224,9 @@ All colors MUST be HSL.
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
-    break-inside: avoid;
     margin-top: 0 !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
 
   /* Group card styling */
