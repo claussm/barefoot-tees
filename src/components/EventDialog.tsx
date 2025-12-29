@@ -6,6 +6,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -278,7 +279,8 @@ export const EventDialog = ({ open, onOpenChange, event }: EventDialogProps) => 
               Cancel
             </Button>
             <Button type="submit" disabled={saveMutation.isPending}>
-              {event ? "Update" : "Create"}
+              {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saveMutation.isPending ? (event ? "Updating..." : "Creating...") : (event ? "Update" : "Create")}
             </Button>
           </div>
         </form>

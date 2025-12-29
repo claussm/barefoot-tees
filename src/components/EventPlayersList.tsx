@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Users, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Save, Trophy, Mail, Send, CheckCircle2, Clock, RotateCcw } from "lucide-react";
+import { Plus, Users, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Save, Trophy, Mail, Send, CheckCircle2, Clock, RotateCcw, Loader2 } from "lucide-react";
 import { PlayerPointsDialog } from "@/components/PlayerPointsDialog";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -462,7 +462,11 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
             You have unsaved score changes
           </span>
           <Button onClick={() => saveScoresMutation.mutate()} disabled={saveScoresMutation.isPending}>
-            <Save className="mr-2 h-4 w-4" />
+            {saveScoresMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
             {saveScoresMutation.isPending ? "Saving..." : "Save Scores"}
           </Button>
         </div>
