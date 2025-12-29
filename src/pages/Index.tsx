@@ -71,12 +71,11 @@ const Index = () => {
           date,
           holes,
           is_locked,
-          event_players!inner (
+          event_players (
             player_id,
             status
           )
         `)
-        .eq("event_players.status", "yes")
         .gte("date", today)
         .order("date")
         .limit(5);
@@ -84,13 +83,19 @@ const Index = () => {
 
       const eventsWithScores = await Promise.all(
         data.map(async (event) => {
-          const playerIds = event.event_players.map((ep: any) => ep.player_id);
+          // Filter to only "yes" players
+          const yesPlayers = event.event_players?.filter((ep: any) => ep.status === "yes") || [];
+          const playerIds = yesPlayers.map((ep: any) => ep.player_id);
           
-          const { data: scores } = await supabase
-            .from("round_scores")
-            .select("player_id")
-            .eq("event_id", event.id)
-            .in("player_id", playerIds);
+          let scoredCount = 0;
+          if (playerIds.length > 0) {
+            const { data: scores } = await supabase
+              .from("round_scores")
+              .select("player_id")
+              .eq("event_id", event.id)
+              .in("player_id", playerIds);
+            scoredCount = scores?.length || 0;
+          }
 
           return {
             id: event.id,
@@ -99,7 +104,7 @@ const Index = () => {
             holes: event.holes,
             is_locked: event.is_locked,
             playerCount: playerIds.length,
-            scoredCount: scores?.length || 0,
+            scoredCount,
           };
         })
       );
