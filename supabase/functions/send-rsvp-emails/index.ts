@@ -103,7 +103,13 @@ serve(async (req) => {
       );
     }
 
-    const appUrl = Deno.env.get("APP_URL") || `https://${Deno.env.get("SUPABASE_PROJECT_REF")}.lovable.app`;
+    const appUrl = Deno.env.get("APP_URL");
+    
+    if (!appUrl) {
+      throw new Error("APP_URL environment variable is not set");
+    }
+    
+    console.log(`Using app URL: ${appUrl}`);
     
     // Format event date
     const eventDate = new Date(event.date).toLocaleDateString("en-US", {
