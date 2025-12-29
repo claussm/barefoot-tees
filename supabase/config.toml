@@ -1,1 +1,7 @@
 project_id = "eondrbhasvkvcbbfmuew"
+
+[functions.send-rsvp-emails]
+verify_jwt = true
+
+[functions.handle-rsvp]
+verify_jwt = false

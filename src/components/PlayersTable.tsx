@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, RefreshCw, Trophy } from "lucide-react";
+import { Edit, Trash2, RefreshCw, Trophy, Mail } from "lucide-react";
 import { PlayerPointsDialog } from "./PlayerPointsDialog";
 
 interface PlayersTableProps {
@@ -40,6 +40,7 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
             <TableHead>Tee Box</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -49,6 +50,16 @@ export const PlayersTable = ({ players, isLoading, onEdit, onDeactivate, onReact
           {players.map((player) => (
             <TableRow key={player.id}>
               <TableCell className="font-medium">{player.name}</TableCell>
+              <TableCell>
+                {player.email ? (
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="truncate max-w-[180px]">{player.email}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">—</span>
+                )}
+              </TableCell>
               <TableCell>
                 {player.tee_boxes ? (
                   <div className="flex items-center gap-2">

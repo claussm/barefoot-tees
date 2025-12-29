@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 const playerSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters").optional().or(z.literal("")),
   phone: z.string().trim().max(20, "Phone must be less than 20 characters").optional().or(z.literal("")),
   tee_box_id: z.string().nullable().optional(),
   notes: z.string().trim().max(500, "Notes must be less than 500 characters").optional().or(z.literal("")),
@@ -39,6 +40,7 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
     resolver: zodResolver(playerSchema),
     defaultValues: {
       name: "",
+      email: "",
       phone: "",
       tee_box_id: null,
       notes: "",
@@ -51,6 +53,7 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
       if (player) {
         reset({
           name: player.name || "",
+          email: player.email || "",
           phone: player.phone || "",
           tee_box_id: player.tee_box_id || null,
           notes: player.notes || "",
@@ -59,6 +62,7 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
       } else {
         reset({
           name: "",
+          email: "",
           phone: "",
           tee_box_id: null,
           notes: "",
@@ -85,6 +89,7 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
     mutationFn: async (data: PlayerFormData) => {
       const playerData = {
         name: data.name,
+        email: data.email || null,
         phone: data.phone || null,
         tee_box_id: data.tee_box_id || null,
         notes: data.notes || null,
@@ -151,6 +156,17 @@ export const PlayerDialog = ({ open, onOpenChange, player }: PlayerDialogProps) 
               <Label htmlFor="name">Name *</Label>
               <Input id="name" {...register("name")} />
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="player@example.com"
+                {...register("email")}
+              />
+              {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
             </div>
 
             <div>

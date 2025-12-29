@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Users, History, CheckCircle, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Save, Trophy } from "lucide-react";
+import { Plus, Users, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Save, Trophy, Mail, Send, CheckCircle2, Clock } from "lucide-react";
 import { PlayerPointsDialog } from "@/components/PlayerPointsDialog";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EventPlayersListProps {
   eventId: string;
@@ -34,6 +35,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
   const [scores, setScores] = useState<Record<string, string>>({});
   const [pointsDialogOpen, setPointsDialogOpen] = useState(false);
   const [selectedPlayerForHistory, setSelectedPlayerForHistory] = useState<any>(null);
+  const [sendInvitesDialogOpen, setSendInvitesDialogOpen] = useState(false);
+  const [isSendingInvites, setIsSendingInvites] = useState(false);
 
   const { data: eventPlayers } = useQuery({
     queryKey: ["event_players", eventId],
@@ -43,7 +46,7 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
         .select("*, players(*)")
         .eq("event_id", eventId);
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -387,6 +390,41 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
 
   const yesCount = eventPlayers?.filter((ep) => ep.status === "yes").length || 0;
 
+  // Count players ready to receive invites (invited, no invite sent yet, has email)
+  const invitesReadyCount = eventPlayers?.filter((ep: any) => 
+    ep.status === "invited" && 
+    !ep.invite_sent_at && 
+    ep.players?.email
+  ).length || 0;
+
+  const handleSendInvites = async () => {
+    setIsSendingInvites(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-rsvp-emails", {
+        body: { event_id: eventId },
+      });
+
+      if (error) throw error;
+
+      if (data.sent === 0) {
+        toast.info(data.message || "No invites to send");
+      } else {
+        toast.success(`Sent ${data.sent} invite${data.sent > 1 ? "s" : ""} successfully`);
+        queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      }
+
+      if (data.errors && data.errors.length > 0) {
+        toast.warning(`${data.errors.length} email(s) failed to send`);
+      }
+    } catch (error: any) {
+      console.error("Send invites error:", error);
+      toast.error(error.message || "Failed to send invites");
+    } finally {
+      setIsSendingInvites(false);
+      setSendInvitesDialogOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {hasUnsavedScores && (
@@ -422,6 +460,15 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
         </div>
 
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setSendInvitesDialogOpen(true)}
+            disabled={invitesReadyCount === 0}
+          >
+            <Send className="mr-2 h-4 w-4" />
+            Send Invites {invitesReadyCount > 0 && `(${invitesReadyCount})`}
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -542,7 +589,33 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
                       onCheckedChange={() => toggleSelectPlayer(ep.id)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{ep.players.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {ep.players.name}
+                      {ep.responded_at ? (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>Responded via email</TooltipContent>
+                        </Tooltip>
+                      ) : ep.invite_sent_at ? (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Mail className="h-4 w-4 text-blue-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>Invite sent</TooltipContent>
+                        </Tooltip>
+                      ) : ep.players?.email ? (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>Ready to send invite</TooltipContent>
+                        </Tooltip>
+                      ) : null}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {isYes ? (
                       <Input
@@ -631,6 +704,23 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
         onOpenChange={setPointsDialogOpen}
         player={selectedPlayerForHistory}
       />
+
+      <AlertDialog open={sendInvitesDialogOpen} onOpenChange={setSendInvitesDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send RSVP Invites?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send email invites to {invitesReadyCount} player{invitesReadyCount !== 1 ? "s" : ""} who have an email address and haven't been invited yet.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSendingInvites}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendInvites} disabled={isSendingInvites}>
+              {isSendingInvites ? "Sending..." : "Send Invites"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
