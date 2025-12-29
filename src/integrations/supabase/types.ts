@@ -125,24 +125,33 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          invite_sent_at: string | null
           note: string | null
           player_id: string
+          responded_at: string | null
+          rsvp_token: string | null
           status: string
         }
         Insert: {
           created_at?: string
           event_id: string
           id?: string
+          invite_sent_at?: string | null
           note?: string | null
           player_id: string
+          responded_at?: string | null
+          rsvp_token?: string | null
           status?: string
         }
         Update: {
           created_at?: string
           event_id?: string
           id?: string
+          invite_sent_at?: string | null
           note?: string | null
           player_id?: string
+          responded_at?: string | null
+          rsvp_token?: string | null
           status?: string
         }
         Relationships: [
@@ -389,6 +398,7 @@ export type Database = {
         Row: {
           created_at: string
           default_team_id: string | null
+          email: string | null
           handicap: number | null
           id: string
           is_active: boolean
@@ -401,6 +411,7 @@ export type Database = {
         Insert: {
           created_at?: string
           default_team_id?: string | null
+          email?: string | null
           handicap?: number | null
           id?: string
           is_active?: boolean
@@ -413,6 +424,7 @@ export type Database = {
         Update: {
           created_at?: string
           default_team_id?: string | null
+          email?: string | null
           handicap?: number | null
           id?: string
           is_active?: boolean
