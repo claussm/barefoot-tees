@@ -121,6 +121,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
       toast.success("Status updated");
     },
     onError: (error: any) => {
@@ -141,6 +143,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
       queryClient.invalidateQueries({ queryKey: ["available_players", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
       toast.success("Player added");
       setAddDialogOpen(false);
     },
@@ -173,6 +177,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
       toast.success(`Added ${count} active players`);
     },
     onError: (error: any) => {
@@ -220,6 +226,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
       toast.success(`Added ${count} players from last event`);
     },
     onError: (error: any) => {
@@ -239,6 +247,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
       queryClient.invalidateQueries({ queryKey: ["groups", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
       toast.success("Player removed from event");
       setDeleteDialogOpen(false);
       setPlayerToDelete(null);
@@ -286,6 +296,8 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
       setSelectedPlayers(new Set());
       toast.success("Status updated for selected players");
     },

@@ -265,6 +265,12 @@ const EventDetail = () => {
       if (eventError) throw eventError;
     },
     onSuccess: () => {
+      // Invalidate all event-related queries for immediate UI updates across all pages
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["scorer-events"] });
+      queryClient.invalidateQueries({ queryKey: ["top_players_dashboard"] });
       toast.success("Event deleted successfully");
       navigate("/");
     },

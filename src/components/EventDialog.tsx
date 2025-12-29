@@ -163,7 +163,11 @@ export const EventDialog = ({ open, onOpenChange, event }: EventDialogProps) => 
       }
     },
     onSuccess: () => {
+      // Invalidate all event-related queries for immediate UI updates across all pages
       queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["all_events"] });
+      queryClient.invalidateQueries({ queryKey: ["upcoming_events_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["scorer-events"] });
       toast.success(event ? "Event updated" : "Event created");
       onOpenChange(false);
       reset();
