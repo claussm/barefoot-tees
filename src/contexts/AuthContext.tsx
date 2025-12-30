@@ -26,6 +26,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const hasShownExpiryToast = useRef(false);
 
+  // Track if we had a session before to detect actual expiry
+  const hadSessionRef = useRef(false);
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -34,12 +37,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Handle session expiry/logout
         if (event === 'SIGNED_OUT') {
+          const hadSession = hadSessionRef.current;
+          
           setSession(null);
           setUser(null);
           setRole(null);
+          hadSessionRef.current = false;
           
           // Only show toast if we had a session before (actual expiry, not initial load)
-          if (!hasShownExpiryToast.current && session) {
+          if (!hasShownExpiryToast.current && hadSession) {
             hasShownExpiryToast.current = true;
             toast.error('Your session has expired. Please sign in again.');
             navigate('/auth');
@@ -50,12 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Reset the toast flag on successful sign in
         if (event === 'SIGNED_IN') {
           hasShownExpiryToast.current = false;
+          hadSessionRef.current = true;
         }
         
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
+          hadSessionRef.current = true;
           // Fetch user role in a deferred way to avoid blocking
           setTimeout(() => {
             fetchUserRole(currentSession.user.id);
@@ -72,13 +80,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
+        hadSessionRef.current = true;
         fetchUserRole(existingSession.user.id);
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, session]);
+  }, [navigate]);
 
   // Listen for auth errors dispatched from React Query
   useEffect(() => {
@@ -128,8 +137,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setRole(null);
+    try {
+      // Clear local state first to ensure UI updates even if network fails
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      hadSessionRef.current = false;
+      
+      // Then try to sign out on the server
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Still navigate to auth even if server call fails
+    }
     navigate('/auth');
   };
 
