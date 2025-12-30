@@ -3,26 +3,36 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-// Helper to create HTML response headers that work with Supabase edge runtime
-function createHtmlHeaders(): Headers {
+// Helper to create an HTML response with Blob body to force correct content-type
+function htmlResponse(html: string, status: number): Response {
+  // Using Blob with explicit type forces the gateway to respect our content-type
+  const blob = new Blob([html], { type: "text/html; charset=utf-8" });
+  
   const headers = new Headers();
   headers.set("access-control-allow-origin", "*");
   headers.set("access-control-allow-headers", "authorization, x-client-info, apikey, content-type");
+  headers.set("access-control-allow-methods", "GET, OPTIONS");
   headers.set("content-type", "text/html; charset=utf-8");
-  headers.set("cache-control", "no-store");
-  return headers;
+  headers.set("cache-control", "no-store, no-cache, must-revalidate");
+  
+  console.log("Returning HTML response with headers:", Object.fromEntries(headers.entries()));
+  
+  return new Response(blob, { status, headers });
 }
 
 Deno.serve(async (req) => {
+  const url = new URL(req.url);
+  console.log("RSVP request received:", req.method, url.pathname, url.search.replace(/token=[^&]+/, "token=REDACTED"));
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const url = new URL(req.url);
     const token = url.searchParams.get("token");
     const response = url.searchParams.get("response");
 
@@ -54,13 +64,13 @@ Deno.serve(async (req) => {
 
     if (fetchError || !eventPlayer) {
       console.error("Token lookup failed:", fetchError);
-      return new Response(
+      return htmlResponse(
         generateHtmlResponse({
           success: false,
           title: "Invalid Link",
           message: "This RSVP link is invalid or has expired. Please contact the event organizer.",
         }),
-        { status: 404, headers: createHtmlHeaders() }
+        404
       );
     }
 
@@ -69,7 +79,7 @@ Deno.serve(async (req) => {
 
     // Check if already responded
     if (eventPlayer.responded_at) {
-      return new Response(
+      return htmlResponse(
         generateHtmlResponse({
           success: true,
           title: "Already Responded",
@@ -81,7 +91,7 @@ Deno.serve(async (req) => {
             holes: event.holes,
           },
         }),
-        { status: 200, headers: createHtmlHeaders() }
+        200
       );
     }
 
@@ -100,8 +110,9 @@ Deno.serve(async (req) => {
     }
 
     const isYes = response === "yes";
+    console.log("RSVP updated successfully:", { playerId: eventPlayer.id, response });
 
-    return new Response(
+    return htmlResponse(
       generateHtmlResponse({
         success: true,
         title: isYes ? "You're In! 🎉" : "Maybe Next Time",
@@ -116,17 +127,17 @@ Deno.serve(async (req) => {
         },
         isYes,
       }),
-      { status: 200, headers: createHtmlHeaders() }
+      200
     );
   } catch (error: any) {
     console.error("Error in handle-rsvp:", error);
-    return new Response(
+    return htmlResponse(
       generateHtmlResponse({
         success: false,
         title: "Something Went Wrong",
         message: error.message || "An error occurred processing your response. Please try again or contact the event organizer.",
       }),
-      { status: 500, headers: createHtmlHeaders() }
+      500
     );
   }
 });
