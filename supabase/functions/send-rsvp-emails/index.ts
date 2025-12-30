@@ -15,31 +15,62 @@ interface SendRsvpRequest {
   event_id: string;
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Tee Time Toolkit <noreply@rsvp.claussm.io>",
-        to: [to],
-        subject,
-        html,
-      }),
-    });
+async function sendEmailWithRetry(
+  to: string, 
+  subject: string, 
+  html: string,
+  maxRetries: number = 3
+): Promise<{ success: boolean; error?: string; attempts: number }> {
+  let lastError = "";
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Tee Time Toolkit <noreply@rsvp.claussm.io>",
+          to: [to],
+          subject,
+          html,
+        }),
+      });
 
-    if (!response.ok) {
+      if (response.ok) {
+        console.log(`Email sent to ${to} on attempt ${attempt}`);
+        return { success: true, attempts: attempt };
+      }
+
       const errorData = await response.json();
-      return { success: false, error: errorData.message || "Failed to send email" };
+      lastError = errorData.message || "Failed to send email";
+      
+      // Check if it's a rate limit error (429) - retry with backoff
+      // Don't retry on 4xx errors other than 429 (client errors)
+      if (response.status !== 429 && response.status >= 400 && response.status < 500) {
+        console.error(`Non-retryable error for ${to}: ${lastError}`);
+        return { success: false, error: lastError, attempts: attempt };
+      }
+      
+      console.log(`Attempt ${attempt} failed for ${to}: ${lastError}. Retrying...`);
+      
+    } catch (error: any) {
+      lastError = error.message;
+      console.log(`Attempt ${attempt} threw error for ${to}: ${lastError}. Retrying...`);
     }
-
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+    
+    // Exponential backoff: 1s, 2s, 4s...
+    if (attempt < maxRetries) {
+      const backoffMs = Math.pow(2, attempt - 1) * 1000;
+      console.log(`Waiting ${backoffMs}ms before retry...`);
+      await delay(backoffMs);
+    }
   }
+  
+  console.error(`All ${maxRetries} attempts failed for ${to}: ${lastError}`);
+  return { success: false, error: lastError, attempts: maxRetries };
 }
 
 serve(async (req) => {
@@ -226,7 +257,7 @@ serve(async (req) => {
       `;
 
       try {
-        const emailResult = await sendEmail(
+        const emailResult = await sendEmailWithRetry(
           player.email,
           `Golf Event Invite - ${eventDate} at ${event.course_name}`,
           emailHtml
@@ -236,7 +267,7 @@ serve(async (req) => {
           throw new Error(emailResult.error);
         }
 
-        console.log(`Email sent to ${player.email}`);
+        console.log(`Email sent to ${player.email} after ${emailResult.attempts} attempt(s)`);
 
         // Update invite_sent_at timestamp
         const { error: updateError } = await supabase
