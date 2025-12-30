@@ -10,7 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { KenBurnsBackground } from '@/components/KenBurnsBackground';
+
+const REMEMBER_ME_KEY = 'ttt-remember-me';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Please enter a valid email address'),
@@ -29,9 +33,31 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    // Default to true, or restore from localStorage
+    return localStorage.getItem(REMEMBER_ME_KEY) !== 'false';
+  });
   const { signIn, signUp, user, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Store the remember me preference
+  useEffect(() => {
+    localStorage.setItem(REMEMBER_ME_KEY, String(rememberMe));
+  }, [rememberMe]);
+
+  // Clear session on browser close if "remember me" is unchecked
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!rememberMe) {
+        // Clear auth data when browser closes
+        localStorage.removeItem('sb-eondrbhasvkvcbbfmuew-auth-token');
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [rememberMe]);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -145,6 +171,19 @@ export default function Auth() {
                       </FormItem>
                     )}
                   />
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label
+                      htmlFor="remember-me"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Signing in...' : 'Sign In'}
                   </Button>
