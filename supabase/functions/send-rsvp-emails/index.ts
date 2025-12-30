@@ -3,6 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY_FULL");
 
+// Delay utility to respect Resend rate limits (2 requests/second)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -247,6 +250,12 @@ serve(async (req) => {
       } catch (emailError: any) {
         console.error(`Failed to send email to ${player.email}:`, emailError);
         errors.push(`${player.name}: ${emailError.message}`);
+      }
+
+      // Add delay between emails to respect Resend rate limits (2 requests/second)
+      // Wait 600ms between emails to stay safely under the limit
+      if (playersWithEmail.indexOf(ep) < playersWithEmail.length - 1) {
+        await delay(600);
       }
     }
 
