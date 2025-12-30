@@ -269,20 +269,37 @@ serve(async (req) => {
 
         console.log(`Email sent to ${player.email} after ${emailResult.attempts} attempt(s)`);
 
-        // Update invite_sent_at timestamp
+        // Update invite_sent_at timestamp and email status
         const { error: updateError } = await supabase
           .from("event_players")
-          .update({ invite_sent_at: new Date().toISOString() })
+          .update({ 
+            invite_sent_at: new Date().toISOString(),
+            email_status: 'sent',
+            last_email_error: null
+          })
           .eq("id", ep.id);
 
         if (updateError) {
-          console.error(`Failed to update invite_sent_at for ${player.email}:`, updateError);
+          console.error(`Failed to update status for ${player.email}:`, updateError);
         }
 
         sentCount++;
       } catch (emailError: any) {
         console.error(`Failed to send email to ${player.email}:`, emailError);
         errors.push(`${player.name}: ${emailError.message}`);
+        
+        // Update email status to failed with error message
+        const { error: updateError } = await supabase
+          .from("event_players")
+          .update({ 
+            email_status: 'failed',
+            last_email_error: emailError.message
+          })
+          .eq("id", ep.id);
+
+        if (updateError) {
+          console.error(`Failed to update error status for ${player.email}:`, updateError);
+        }
       }
 
       // Add delay between emails to respect Resend rate limits (2 requests/second)
