@@ -123,9 +123,11 @@ export type Database = {
       event_players: {
         Row: {
           created_at: string
+          email_status: string
           event_id: string
           id: string
           invite_sent_at: string | null
+          last_email_error: string | null
           note: string | null
           player_id: string
           responded_at: string | null
@@ -134,9 +136,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_status?: string
           event_id: string
           id?: string
           invite_sent_at?: string | null
+          last_email_error?: string | null
           note?: string | null
           player_id: string
           responded_at?: string | null
@@ -145,9 +149,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_status?: string
           event_id?: string
           id?: string
           invite_sent_at?: string | null
+          last_email_error?: string | null
           note?: string | null
           player_id?: string
           responded_at?: string | null

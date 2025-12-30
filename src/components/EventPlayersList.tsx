@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Users, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Save, Trophy, Mail, Send, CheckCircle2, Clock, RotateCcw, Loader2 } from "lucide-react";
+import { Plus, Users, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Save, Trophy, Mail, Send, CheckCircle2, Clock, RotateCcw, Loader2, AlertCircle, XCircle } from "lucide-react";
 import { PlayerPointsDialog } from "@/components/PlayerPointsDialog";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 interface EventPlayersListProps {
   eventId: string;
@@ -37,8 +38,9 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
   const [selectedPlayerForHistory, setSelectedPlayerForHistory] = useState<any>(null);
   const [sendInvitesDialogOpen, setSendInvitesDialogOpen] = useState(false);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
+  const [emailProgress, setEmailProgress] = useState({ sent: 0, total: 0 });
 
-  const { data: eventPlayers } = useQuery({
+  const { data: eventPlayers, refetch: refetchEventPlayers } = useQuery({
     queryKey: ["event_players", eventId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -49,6 +51,39 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
       return data as any[];
     },
   });
+
+  // Subscribe to realtime updates for progress tracking
+  useEffect(() => {
+    if (!isSendingInvites) return;
+
+    const channel = supabase
+      .channel('email-progress')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'event_players',
+          filter: `event_id=eq.${eventId}`,
+        },
+        (payload) => {
+          // Update progress when email_status changes
+          if (payload.new.email_status === 'sent' || payload.new.email_status === 'failed') {
+            setEmailProgress(prev => ({
+              ...prev,
+              sent: prev.sent + 1,
+            }));
+          }
+          // Refetch to get latest data
+          refetchEventPlayers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isSendingInvites, eventId, refetchEventPlayers]);
 
   const { data: existingScores } = useQuery({
     queryKey: ["player_points", eventId],
@@ -273,7 +308,13 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     mutationFn: async (eventPlayerId: string) => {
       const { error } = await supabase
         .from("event_players")
-        .update({ invite_sent_at: null, responded_at: null, status: "invited" })
+        .update({ 
+          invite_sent_at: null, 
+          responded_at: null, 
+          status: "invited",
+          email_status: "pending",
+          last_email_error: null
+        })
         .eq("id", eventPlayerId);
       if (error) throw error;
     },
@@ -419,15 +460,30 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
 
   const yesCount = eventPlayers?.filter((ep) => ep.status === "yes").length || 0;
 
+  // Count players with failed emails
+  const failedEmailsCount = eventPlayers?.filter((ep: any) => 
+    ep.email_status === 'failed'
+  ).length || 0;
+
   // Count players ready to receive invites (invited, no invite sent yet, has email)
   const invitesReadyCount = eventPlayers?.filter((ep: any) => 
     ep.status === "invited" && 
     !ep.invite_sent_at && 
-    ep.players?.email
+    ep.players?.email &&
+    ep.email_status !== 'failed'
   ).length || 0;
 
   const handleSendInvites = async () => {
+    // Reset email_status to pending for all players that will receive emails
+    const playersToSend = eventPlayers?.filter((ep: any) => 
+      ep.status === "invited" && 
+      !ep.invite_sent_at && 
+      ep.players?.email
+    ) || [];
+    
+    setEmailProgress({ sent: 0, total: playersToSend.length });
     setIsSendingInvites(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke("send-rsvp-emails", {
         body: { event_id: eventId },
@@ -438,12 +494,13 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
       if (data.sent === 0) {
         toast.info(data.message || "No invites to send");
       } else {
-        toast.success(`Sent ${data.sent} invite${data.sent > 1 ? "s" : ""} successfully`);
+        const failedCount = data.errors?.length || 0;
+        if (failedCount > 0) {
+          toast.warning(`Sent ${data.sent} invite(s), ${failedCount} failed`);
+        } else {
+          toast.success(`Sent ${data.sent} invite${data.sent > 1 ? "s" : ""} successfully`);
+        }
         queryClient.invalidateQueries({ queryKey: ["event_players", eventId] });
-      }
-
-      if (data.errors && data.errors.length > 0) {
-        toast.warning(`${data.errors.length} email(s) failed to send`);
       }
     } catch (error: any) {
       console.error("Send invites error:", error);
@@ -451,6 +508,7 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
     } finally {
       setIsSendingInvites(false);
       setSendInvitesDialogOpen(false);
+      setEmailProgress({ sent: 0, total: 0 });
     }
   };
 
@@ -490,6 +548,13 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
           <p className="text-sm text-muted">
             {yesCount} / {maxPlayers} players
           </p>
+
+          {failedEmailsCount > 0 && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {failedEmailsCount} failed email{failedEmailsCount !== 1 ? "s" : ""}
+            </Badge>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -632,7 +697,37 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
                           </TooltipTrigger>
                           <TooltipContent>Responded via email</TooltipContent>
                         </Tooltip>
-                      ) : ep.invite_sent_at ? (
+                      ) : ep.email_status === 'failed' ? (
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <XCircle className="h-4 w-4 text-destructive" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="max-w-xs">
+                                <p className="font-semibold">Email failed</p>
+                                {ep.last_email_error && (
+                                  <p className="text-xs mt-1">{ep.last_email_error}</p>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => resetInviteMutation.mutate(ep.id)}
+                                disabled={resetInviteMutation.isPending}
+                              >
+                                <RotateCcw className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Reset to retry sending</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      ) : ep.email_status === 'sent' || ep.invite_sent_at ? (
                         <div className="flex items-center gap-1">
                           <Tooltip>
                             <TooltipTrigger>
@@ -754,18 +849,38 @@ export const EventPlayersList = ({ eventId, maxPlayers }: EventPlayersListProps)
         player={selectedPlayerForHistory}
       />
 
-      <AlertDialog open={sendInvitesDialogOpen} onOpenChange={setSendInvitesDialogOpen}>
+      <AlertDialog open={sendInvitesDialogOpen} onOpenChange={(open) => !isSendingInvites && setSendInvitesDialogOpen(open)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Send RSVP Invites?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will send email invites to {invitesReadyCount} player{invitesReadyCount !== 1 ? "s" : ""} who have an email address and haven't been invited yet.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  This will send email invites to {invitesReadyCount} player{invitesReadyCount !== 1 ? "s" : ""} who have an email address and haven't been invited yet.
+                </p>
+                {isSendingInvites && emailProgress.total > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Sending emails...</span>
+                      <span>{emailProgress.sent} / {emailProgress.total}</span>
+                    </div>
+                    <Progress value={(emailProgress.sent / emailProgress.total) * 100} className="h-2" />
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSendingInvites}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleSendInvites} disabled={isSendingInvites}>
-              {isSendingInvites ? "Sending..." : "Send Invites"}
+              {isSendingInvites ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Invites"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
