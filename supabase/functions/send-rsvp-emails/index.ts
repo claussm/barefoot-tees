@@ -169,10 +169,9 @@ serve(async (req) => {
       const player = ep.players as any;
       const rsvpToken = ep.rsvp_token;
 
-      // Link directly to the edge function to bypass React app authentication
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const yesUrl = `${supabaseUrl}/functions/v1/handle-rsvp?token=${rsvpToken}&response=yes`;
-      const noUrl = `${supabaseUrl}/functions/v1/handle-rsvp?token=${rsvpToken}&response=no`;
+      // Link to the React app's public /rsvp route (no auth required)
+      const yesUrl = `${appUrl}/rsvp?token=${rsvpToken}&response=yes`;
+      const noUrl = `${appUrl}/rsvp?token=${rsvpToken}&response=no`;
 
       const emailHtml = `
         <!DOCTYPE html>

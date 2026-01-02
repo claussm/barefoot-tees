@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import ScorerDashboard from "./pages/ScorerDashboard";
 
 import NotFound from "./pages/NotFound";
+import Rsvp from "./pages/Rsvp";
 
 // Helper to check if an error is auth-related
 const isAuthError = (error: unknown): boolean => {
@@ -115,6 +116,7 @@ const App = () => (
             />
             <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
             <Route path="/scorer" element={<ProtectedRoute requiredRole="scorer"><ScorerDashboard /></ProtectedRoute>} />
+            <Route path="/rsvp" element={<Rsvp />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
