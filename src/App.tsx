@@ -13,6 +13,7 @@ import Courses from "./pages/Courses";
 import Statistics from "./pages/Statistics";
 import EventDetail from "./pages/EventDetail";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import ScorerDashboard from "./pages/ScorerDashboard";
 
 import NotFound from "./pages/NotFound";
@@ -64,6 +65,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/"
               element={
